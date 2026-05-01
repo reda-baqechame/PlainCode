@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Loader2,
   Shield,
@@ -8,8 +8,14 @@ import {
   AlertCircle,
   RotateCcw,
   Flame,
+  FileText,
+  Check,
+  Link2,
 } from "lucide-react";
 import type { DefendQuestion } from "@/app/api/defend/route";
+import { saveDefendHistory, getDefendHistory, type DefendHistoryEntry } from "@/lib/utils/history";
+import { exportDefendMarkdown } from "@/lib/utils/export-markdown";
+import { encodeShareResult, buildShareUrl } from "@/lib/utils/share";
 import { GithubUrlInput } from "@/components/ui/GithubUrlInput";
 import { RoastCard } from "@/components/RoastCard";
 import { FixPromptCard } from "@/components/FixPromptCard";
@@ -188,7 +194,76 @@ export default function DefendPage() {
   const [builderType, setBuilderType] = useState("");
   const [showRoastCard, setShowRoastCard] = useState(false);
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
+  const [draftRepo, setDraftRepo] = useState<string | null>(null);
+  const [history, setHistory] = useState<DefendHistoryEntry[]>([]);
+  const [copiedMd, setCopiedMd] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const DRAFT_KEY = "plaincode_defend_draft";
+
+  useEffect(() => {
+    setHistory(getDefendHistory());
+  }, []);
+
+  // Detect saved draft on mount
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft.repoUrl && Array.isArray(draft.questions) && draft.questions.length > 0) {
+          setDraftRepo(draft.repoUrl);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Save quiz progress to sessionStorage after each answer
+  useEffect(() => {
+    if (phase !== "quiz" && phase !== "scoring" && phase !== "reviewing") return;
+    try {
+      sessionStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          repoUrl,
+          repoCode,
+          techStack,
+          architectureDiagram,
+          questions,
+          answered,
+          currentIdx,
+        })
+      );
+    } catch {}
+  }, [answered, currentIdx, phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleResumeDraft() {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      setRepoUrl(draft.repoUrl ?? "");
+      setRepoCode(draft.repoCode ?? "");
+      setTechStack(draft.techStack ?? "");
+      setArchitectureDiagram(draft.architectureDiagram ?? "");
+      setQuestions(draft.questions ?? []);
+      setAnswered(draft.answered ?? []);
+      setCurrentIdx(draft.currentIdx ?? 0);
+      setCurrentAnswer("");
+      setCurrentScore(null);
+      setDraftRepo(null);
+      setPhase("quiz");
+      setTimeout(() => textareaRef.current?.focus(), 100);
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY);
+    }
+  }
+
+  function clearDraft() {
+    try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
+    setDraftRepo(null);
+  }
 
   async function handleStart() {
     if (!repoUrl.trim()) return;
@@ -310,6 +385,16 @@ export default function DefendPage() {
         setWeakSpots(data.weakSpots ?? []);
         setAssessment(data.assessment ?? "");
         setBuilderType(data.builderType ?? "");
+        clearDraft();
+        const entry: DefendHistoryEntry = {
+          repoUrl: repoUrl.trim(),
+          repoName: repoUrl.trim().replace(/\/$/, "").split("/").pop() ?? "repo",
+          score: data.defenseScore,
+          builderType: data.builderType ?? "",
+          date: new Date().toLocaleDateString(),
+        };
+        saveDefendHistory(entry);
+        setHistory(getDefendHistory());
         setPhase("results");
       } catch {
         setError("Connection error generating summary.");
@@ -337,6 +422,7 @@ export default function DefendPage() {
     setBuilderType("");
     setShowRoastCard(false);
     setExpandedQuestion(null);
+    clearDraft();
   }
 
   const currentQuestion = questions[currentIdx];
@@ -366,6 +452,30 @@ export default function DefendPage() {
       {/* ── Phase: input ── */}
       {phase === "input" && (
         <div className="space-y-4">
+          {/* Resume draft banner */}
+          {draftRepo && (
+            <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Unfinished session</p>
+                <p className="text-xs text-muted-foreground truncate mt-0.5">{draftRepo}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleResumeDraft}
+                  className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+                >
+                  Resume →
+                </button>
+                <button
+                  onClick={clearDraft}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="rounded-lg border border-border bg-card p-6 space-y-4">
             <label className="block space-y-2">
               <span className="text-sm font-medium text-foreground">GitHub repository URL</span>
@@ -389,6 +499,28 @@ export default function DefendPage() {
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
+
+          {/* Previous sessions */}
+          {history.length > 0 && (
+            <div className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden">
+              <p className="text-xs font-semibold text-muted-foreground px-4 py-2 uppercase tracking-wide">Previous sessions</p>
+              {history.map((entry) => (
+                <button
+                  key={entry.repoUrl}
+                  onClick={() => setRepoUrl(entry.repoUrl)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-accent transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{entry.repoName}</p>
+                    <p className="text-xs text-muted-foreground">{entry.date}</p>
+                  </div>
+                  <span className={`text-sm font-bold shrink-0 ml-3 ${entry.score >= 80 ? "text-green-500" : entry.score >= 60 ? "text-amber-500" : "text-red-500"}`}>
+                    {entry.score}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="grid grid-cols-5 gap-2">
             {["Architecture", "Edge Cases", "Security", "Scalability", "Alternatives"].map((cat) => (
@@ -685,13 +817,34 @@ export default function DefendPage() {
                 )}
               </div>
               <p className="text-sm text-foreground font-mono leading-relaxed">{assessment}</p>
-              <button
-                onClick={() => setShowRoastCard(!showRoastCard)}
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Flame className="h-3.5 w-3.5 text-orange-500" />
-                {showRoastCard ? "Hide Share Card" : "Share Results →"}
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowRoastCard(!showRoastCard)}
+                  className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Flame className="h-3.5 w-3.5 text-orange-500" />
+                  {showRoastCard ? "Hide Share Card" : "Share Results →"}
+                </button>
+                <button
+                  onClick={async () => {
+                    const encoded = encodeShareResult({
+                      repoUrl,
+                      defenseScore,
+                      builderType,
+                      assessment,
+                      weakSpots,
+                    });
+                    const url = buildShareUrl(window.location.origin + "/defend", encoded);
+                    await navigator.clipboard.writeText(url);
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 2000);
+                  }}
+                  className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {copiedLink ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Link2 className="h-3.5 w-3.5" />}
+                  {copiedLink ? "Link copied!" : "Copy link"}
+                </button>
+              </div>
             </div>
           )}
 
@@ -718,14 +871,35 @@ export default function DefendPage() {
             />
           )}
 
-          {/* Reset */}
-          <button
-            onClick={handleReset}
-            className="w-full flex items-center justify-center gap-2 border border-border text-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-accent transition-colors"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Defend Another Repo
-          </button>
+          {/* Export + Reset */}
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                const md = exportDefendMarkdown({
+                  repoUrl,
+                  defenseScore,
+                  builderType,
+                  assessment,
+                  weakSpots,
+                  answered,
+                });
+                await navigator.clipboard.writeText(md);
+                setCopiedMd(true);
+                setTimeout(() => setCopiedMd(false), 2000);
+              }}
+              className="flex-1 flex items-center justify-center gap-2 border border-border text-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-accent transition-colors text-sm"
+            >
+              {copiedMd ? <Check className="h-4 w-4 text-green-500" /> : <FileText className="h-4 w-4" />}
+              {copiedMd ? "Copied!" : "Export Report"}
+            </button>
+            <button
+              onClick={handleReset}
+              className="flex-1 flex items-center justify-center gap-2 border border-border text-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-accent transition-colors text-sm"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Defend Another Repo
+            </button>
+          </div>
         </div>
       )}
     </div>

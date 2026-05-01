@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Zap,
   Loader2,
@@ -14,6 +14,17 @@ import {
   Terminal,
   Package,
   Flame,
+  FileText,
+  Check,
+  Link2,
+  TestTube2,
+  GitBranch,
+  MessageSquare,
+  FileCheck2,
+  ShieldAlert,
+  Gauge,
+  BrainCircuit,
+  Activity,
 } from "lucide-react";
 import { GithubUrlInput } from "@/components/ui/GithubUrlInput";
 import { RoastCard } from "@/components/RoastCard";
@@ -22,7 +33,11 @@ import { FilesMap, type FileEntry } from "@/components/FilesMap";
 import { RepairPlan, type RepairStep } from "@/components/RepairPlan";
 import { FlowDiagram } from "@/components/output/FlowDiagram";
 import { FollowUpQA } from "@/components/FollowUpQA";
+import { GithubActionsGenerator } from "@/components/GithubActionsGenerator";
 import type { CheckResult } from "@/app/api/vibe-check/route";
+import { saveShipHistory, getShipHistory, type ShipHistoryEntry } from "@/lib/utils/history";
+import { exportShipCheckMarkdown } from "@/lib/utils/export-markdown";
+import { encodeShareResult, decodeShipShare, buildShareUrl } from "@/lib/utils/share";
 
 type Phase = "input" | "fetching" | "analyzing" | "results";
 
@@ -33,6 +48,14 @@ const CHECK_POINTS: Record<string, number> = {
   console_logs: 15,
   error_handling: 15,
   dependencies: 15,
+  tests: 10,
+  ci_cd: 10,
+  todos: 10,
+  license: 5,
+  ai_keys: 20,
+  ai_rate_limit: 10,
+  ai_prompts: 10,
+  ai_error_handling: 10,
 };
 
 const CHECKS_META = [
@@ -95,6 +118,86 @@ const CHECKS_META = [
     color: "text-green-500",
     bg: "bg-green-500/10",
     border: "border-green-500/20",
+  },
+  {
+    category: "tests",
+    name: "Tests Present",
+    desc: "At least one test file detected",
+    pts: 10,
+    Icon: TestTube2,
+    color: "text-violet-500",
+    bg: "bg-violet-500/10",
+    border: "border-violet-500/20",
+  },
+  {
+    category: "ci_cd",
+    name: "CI/CD Configured",
+    desc: "CI/CD or deployment config present",
+    pts: 10,
+    Icon: GitBranch,
+    color: "text-cyan-500",
+    bg: "bg-cyan-500/10",
+    border: "border-cyan-500/20",
+  },
+  {
+    category: "todos",
+    name: "No TODOs in Production",
+    desc: "No TODO/FIXME in non-test source files",
+    pts: 10,
+    Icon: MessageSquare,
+    color: "text-amber-500",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/20",
+  },
+  {
+    category: "license",
+    name: "License File",
+    desc: "LICENSE file present in repository",
+    pts: 5,
+    Icon: FileCheck2,
+    color: "text-teal-500",
+    bg: "bg-teal-500/10",
+    border: "border-teal-500/20",
+  },
+  {
+    category: "ai_keys",
+    name: "LLM Keys Not in Frontend",
+    desc: "AI API keys referenced server-side only",
+    pts: 20,
+    Icon: ShieldAlert,
+    color: "text-rose-500",
+    bg: "bg-rose-500/10",
+    border: "border-rose-500/20",
+  },
+  {
+    category: "ai_rate_limit",
+    name: "AI Rate Limiting",
+    desc: "Rate limiting on AI API routes",
+    pts: 10,
+    Icon: Gauge,
+    color: "text-indigo-500",
+    bg: "bg-indigo-500/10",
+    border: "border-indigo-500/20",
+  },
+  {
+    category: "ai_prompts",
+    name: "System Prompts Server-Side",
+    desc: "Prompt templates not exposed in client code",
+    pts: 10,
+    Icon: BrainCircuit,
+    color: "text-purple-500",
+    bg: "bg-purple-500/10",
+    border: "border-purple-500/20",
+  },
+  {
+    category: "ai_error_handling",
+    name: "AI API Error Handling",
+    desc: "AI calls wrapped with error handling",
+    pts: 10,
+    Icon: Activity,
+    color: "text-pink-500",
+    bg: "bg-pink-500/10",
+    border: "border-pink-500/20",
   },
 ];
 
@@ -194,6 +297,26 @@ export default function ShipCheckPage() {
   const [phase, setPhase] = useState<Phase>("input");
   const [repoUrl, setRepoUrl] = useState("");
   const [error, setError] = useState("");
+  const [history, setHistory] = useState<ShipHistoryEntry[]>([]);
+
+  useEffect(() => {
+    setHistory(getShipHistory());
+    // Restore shared result from URL
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get("r");
+    if (encoded) {
+      const data = decodeShipShare(encoded);
+      if (data) {
+        setRepoUrl(data.repoUrl);
+        setShipScore(data.shipScore);
+        setTechStack(data.techStack);
+        setBuilderType(data.builderType);
+        setAssessment(data.assessment);
+        setChecks(data.checks as CheckResult[]);
+        setPhase("results");
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [fileCount, setFileCount] = useState(0);
   const [shipScore, setShipScore] = useState(0);
   const [techStack, setTechStack] = useState("");
@@ -204,6 +327,8 @@ export default function ShipCheckPage() {
   const [builderType, setBuilderType] = useState("");
   const [showRoastCard, setShowRoastCard] = useState(false);
   const [expandedFix, setExpandedFix] = useState<number | null>(null);
+  const [copiedMd, setCopiedMd] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   async function handleStart() {
     if (!repoUrl.trim()) return;
@@ -246,6 +371,17 @@ export default function ShipCheckPage() {
       setAssessment(auditData.assessment ?? "");
       setBuilderType(auditData.builderType ?? "");
       setChecks((auditData.checks as CheckResult[]).sort((a, b) => a.id - b.id));
+      const verdict = getVerdictTier(auditData.shipScore);
+      const entry: ShipHistoryEntry = {
+        repoUrl: repoUrl.trim(),
+        repoName: repoUrl.trim().replace(/\/$/, "").split("/").pop() ?? "repo",
+        score: auditData.shipScore,
+        verdict: verdict.label,
+        builderType: auditData.builderType ?? "",
+        date: new Date().toLocaleDateString(),
+      };
+      saveShipHistory(entry);
+      setHistory(getShipHistory());
       setPhase("results");
     } catch {
       setError("Connection error. Please try again.");
@@ -281,11 +417,19 @@ export default function ShipCheckPage() {
     const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2 };
     const CATEGORY_PRIORITY: Record<string, RepairStep["priority"]> = {
       secrets: "critical",
+      ai_keys: "critical",
       error_handling: "high",
+      ai_error_handling: "high",
       env_vars: "high",
+      ai_rate_limit: "high",
+      ai_prompts: "high",
       readme: "medium",
       console_logs: "medium",
       dependencies: "medium",
+      tests: "medium",
+      ci_cd: "medium",
+      todos: "medium",
+      license: "medium",
     };
 
     return checks
@@ -313,6 +457,32 @@ export default function ShipCheckPage() {
                 : "Remove debug console.logs from production code";
             case "dependencies":
               return "Pin all dependency versions in package.json";
+            case "tests":
+              return "Add at least one test file (*.test.ts or *.spec.ts)";
+            case "ci_cd":
+              return "Add a CI/CD config (.github/workflows/, Dockerfile, or railway.toml)";
+            case "todos":
+              return f
+                ? `Resolve TODO/FIXME in ${f.file}${f.line ? `:${f.line}` : ""}`
+                : "Resolve all TODO/FIXME comments in production code";
+            case "license":
+              return "Add a LICENSE file to the repository root";
+            case "ai_keys":
+              return f
+                ? `Move LLM API key reference from ${f.file} to server-side code`
+                : "Ensure LLM API keys are never referenced in client-side files";
+            case "ai_rate_limit":
+              return f
+                ? `Add rate limiting to ${f.file}`
+                : "Add rate limiting or retry logic to AI API routes";
+            case "ai_prompts":
+              return f
+                ? `Move system prompt from ${f.file} to server-side code`
+                : "Keep system prompts server-side — never in client/frontend code";
+            case "ai_error_handling":
+              return f
+                ? `Wrap AI API call in ${f.file} with try/catch`
+                : "Add error handling for AI API failures (quota, timeout, overload)";
             default:
               return c.name;
           }
@@ -418,7 +588,29 @@ export default function ShipCheckPage() {
             </button>
           </div>
 
-          {/* 6-check preview grid */}
+          {/* Recent checks history */}
+          {history.length > 0 && (
+            <div className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden">
+              <p className="text-xs font-semibold text-muted-foreground px-4 py-2 uppercase tracking-wide">Previous checks</p>
+              {history.map((entry) => (
+                <button
+                  key={entry.repoUrl}
+                  onClick={() => setRepoUrl(entry.repoUrl)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-accent transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{entry.repoName}</p>
+                    <p className="text-xs text-muted-foreground">{entry.date} · {entry.verdict}</p>
+                  </div>
+                  <span className={`text-sm font-bold shrink-0 ml-3 ${entry.score >= 80 ? "text-green-500" : entry.score >= 60 ? "text-amber-500" : "text-red-500"}`}>
+                    {entry.score}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Check preview grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {CHECKS_META.map((m) => (
               <div
@@ -521,6 +713,9 @@ export default function ShipCheckPage() {
 
           {/* Repair plan */}
           <RepairPlan steps={repairSteps} />
+
+          {/* CI/CD generator */}
+          <GithubActionsGenerator repoUrl={repoUrl} shipScore={shipScore} />
 
           {/* Check results */}
           <div className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden">
@@ -625,13 +820,37 @@ export default function ShipCheckPage() {
                 )}
               </div>
               <p className="text-sm text-foreground font-mono leading-relaxed">{assessment}</p>
-              <button
-                onClick={() => setShowRoastCard(!showRoastCard)}
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Flame className="h-3.5 w-3.5 text-orange-500" />
-                {showRoastCard ? "Hide Share Card" : "Share Results →"}
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowRoastCard(!showRoastCard)}
+                  className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Flame className="h-3.5 w-3.5 text-orange-500" />
+                  {showRoastCard ? "Hide Share Card" : "Share Results →"}
+                </button>
+                <button
+                  onClick={async () => {
+                    const verdict = getVerdictTier(shipScore);
+                    const encoded = encodeShareResult({
+                      repoUrl,
+                      shipScore,
+                      verdict: verdict.label,
+                      builderType,
+                      assessment,
+                      techStack,
+                      checks: checks.map((c) => ({ id: c.id, name: c.name, category: c.category, passed: c.passed, findings: c.findings })),
+                    });
+                    const url = buildShareUrl(window.location.origin + "/vibe-check", encoded);
+                    await navigator.clipboard.writeText(url);
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 2000);
+                  }}
+                  className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {copiedLink ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Link2 className="h-3.5 w-3.5" />}
+                  {copiedLink ? "Link copied!" : "Copy link"}
+                </button>
+              </div>
             </div>
           )}
 
@@ -658,14 +877,37 @@ export default function ShipCheckPage() {
             />
           )}
 
-          {/* Reset */}
-          <button
-            onClick={handleReset}
-            className="w-full flex items-center justify-center gap-2 border border-border text-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-accent transition-colors"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Check Another Repo
-          </button>
+          {/* Export + Reset */}
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                const verdict = getVerdictTier(shipScore);
+                const md = exportShipCheckMarkdown({
+                  repoUrl,
+                  shipScore,
+                  verdict: verdict.label,
+                  builderType,
+                  assessment,
+                  checks,
+                  techStack,
+                });
+                await navigator.clipboard.writeText(md);
+                setCopiedMd(true);
+                setTimeout(() => setCopiedMd(false), 2000);
+              }}
+              className="flex-1 flex items-center justify-center gap-2 border border-border text-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-accent transition-colors text-sm"
+            >
+              {copiedMd ? <Check className="h-4 w-4 text-green-500" /> : <FileText className="h-4 w-4" />}
+              {copiedMd ? "Copied!" : "Export Report"}
+            </button>
+            <button
+              onClick={handleReset}
+              className="flex-1 flex items-center justify-center gap-2 border border-border text-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-accent transition-colors text-sm"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Check Another Repo
+            </button>
+          </div>
         </div>
       )}
     </div>

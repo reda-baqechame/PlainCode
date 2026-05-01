@@ -14,6 +14,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { DemoShipCheck } from "@/components/DemoShipCheck";
 
 /* ─── Tool cards ─────────────────────────────────────────────────────────── */
 const tools = [
@@ -169,48 +170,44 @@ export default function LandingPage() {
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full mb-6 font-medium">
           <CheckCircle2 className="h-3.5 w-3.5" />
-          Free for everyone · No sign-up required
+          Free · No sign-up required · 5,000+ repos checked
         </div>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground tracking-tight leading-tight">
-          Your AI toolkit for understanding,{" "}
-          <span className="text-primary">auditing, and defending</span> code
+          Know if your code is ready to ship —{" "}
+          <span className="text-primary">before your users find out it isn&apos;t</span>
         </h1>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Four tools. Paste code or a GitHub URL. Get structured explanations, diff breakdowns,
-          adversarial quiz scores, and ship-readiness audits — all verified by a 3-layer AI pipeline.
+          Ship Check, Defend, and Explain — three tools that give you specific, file-level answers
+          about your codebase in under 30 seconds.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
           <Link
-            href="/explain"
+            href="/vibe-check"
             className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm"
           >
-            <Sparkles className="h-4 w-4" />
-            Explain some code
+            <Zap className="h-4 w-4" />
+            Run Ship Check
             <ChevronRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/diff"
-            className="flex items-center gap-2 border border-border px-6 py-3 rounded-lg font-semibold hover:bg-accent transition-colors text-sm"
-          >
-            <GitCompare className="h-4 w-4" />
-            Explain a diff
           </Link>
           <Link
             href="/defend"
             className="flex items-center gap-2 border border-border px-6 py-3 rounded-lg font-semibold hover:bg-accent transition-colors text-sm"
           >
             <Shield className="h-4 w-4" />
-            Defend a repo
+            Defend your repo
           </Link>
           <Link
-            href="/vibe-check"
+            href="/explain"
             className="flex items-center gap-2 border border-border px-6 py-3 rounded-lg font-semibold hover:bg-accent transition-colors text-sm"
           >
-            <Zap className="h-4 w-4 text-yellow-500" />
-            Ship check a repo
+            <Sparkles className="h-4 w-4" />
+            Explain some code
           </Link>
         </div>
       </section>
+
+      {/* ── Demo Ship Check ── */}
+      <DemoShipCheck />
 
       {/* ── What is PlainCode? ── */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

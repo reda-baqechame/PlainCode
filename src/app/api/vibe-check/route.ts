@@ -23,7 +23,15 @@ export interface CheckResult {
     | "readme"
     | "console_logs"
     | "error_handling"
-    | "dependencies";
+    | "dependencies"
+    | "tests"
+    | "ci_cd"
+    | "todos"
+    | "license"
+    | "ai_keys"
+    | "ai_rate_limit"
+    | "ai_prompts"
+    | "ai_error_handling";
   passed: boolean;
   findings: CheckFinding[];
 }
@@ -92,25 +100,43 @@ const CHECK_DEFAULTS: CheckResult[] = [
   { id: 4, name: "No Debug Logs", category: "console_logs", passed: true, findings: [] },
   { id: 5, name: "Error Handling", category: "error_handling", passed: true, findings: [] },
   { id: 6, name: "Dependencies Pinned", category: "dependencies", passed: true, findings: [] },
+  { id: 7, name: "Tests Present", category: "tests", passed: true, findings: [] },
+  { id: 8, name: "CI/CD Configured", category: "ci_cd", passed: true, findings: [] },
+  { id: 9, name: "No TODOs in Production", category: "todos", passed: true, findings: [] },
+  { id: 10, name: "License File", category: "license", passed: true, findings: [] },
+  { id: 11, name: "LLM Keys Not in Frontend", category: "ai_keys", passed: true, findings: [] },
+  { id: 12, name: "AI Rate Limiting", category: "ai_rate_limit", passed: true, findings: [] },
+  { id: 13, name: "System Prompts Server-Side", category: "ai_prompts", passed: true, findings: [] },
+  { id: 14, name: "AI API Error Handling", category: "ai_error_handling", passed: true, findings: [] },
 ];
+
+const isAICodebase = (techStack: string) => {
+  const lower = techStack.toLowerCase();
+  return ["openai", "anthropic", "claude", "gemini", "cohere", "langchain", "llamaindex", "huggingface", "ai sdk", "openrouter", "mistral"].some((t) => lower.includes(t));
+};
 
 async function runChecks(repoCode: string, stack: StackAnalysis): Promise<CheckResult[]> {
   const client = getAnthropicClient();
+  const aiRepo = isAICodebase(stack.techStack);
+
   const res = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 2000,
+    max_tokens: 3000,
     messages: [
       {
         role: "user",
-        content: `You are a senior engineer auditing a codebase for ship-readiness. Run exactly 6 checks and return a JSON object.
+        content: `You are a senior engineer auditing a codebase for ship-readiness. Run exactly 14 checks and return a JSON object.
 
 Tech stack: ${stack.techStack}
 Architecture: ${stack.architecture}
+AI codebase: ${aiRepo ? "YES — this uses AI/LLM APIs" : "NO — standard codebase"}
 
 CODEBASE (file paths shown in // FILE: headers):
 ${repoCode.slice(0, 20000)}
 
-Run these 6 checks in order. For each, determine pass/fail based strictly on what you can see in the code.
+Run these 14 checks in order. For each, determine pass/fail based strictly on what you can see in the code.
+
+— STANDARD CHECKS —
 
 CHECK 1 — id:1, category:"env_vars", name:"Env Vars Documented"
 Are all environment variables referenced in code (process.env.*, os.environ[], getenv(), etc.) documented in a README or .env.example file?
@@ -138,19 +164,64 @@ CHECK 6 — id:6, category:"dependencies", name:"Dependencies Pinned"
 Is package.json, requirements.txt, Gemfile, or equivalent present? Are versions pinned (not * or "latest")?
 PASS: dependency file exists with specific versions. FAIL: missing or using wildcards — be explicit.
 
+CHECK 7 — id:7, category:"tests", name:"Tests Present"
+Are there any test files visible? Look for files matching *.test.*, *.spec.*, __tests__ directories, test/ or spec/ directories.
+PASS: at least one test file found. FAIL: no test files detected anywhere in the repo.
+
+CHECK 8 — id:8, category:"ci_cd", name:"CI/CD Configured"
+Is there a CI/CD configuration present? Look for: .github/workflows/ directory, Dockerfile, docker-compose.yml, railway.toml, netlify.toml, vercel.json, .circleci/, .travis.yml, Jenkinsfile.
+PASS: at least one CI/CD or deployment config found. FAIL: no CI/CD configuration detected.
+
+CHECK 9 — id:9, category:"todos", name:"No TODOs in Production"
+Are there TODO:, FIXME:, HACK:, or XXX: comments in non-test production source files?
+Ignore test files (.test., .spec., __tests__) and markdown files.
+PASS: none found in production code. FAIL: found — name the file and line.
+
+CHECK 10 — id:10, category:"license", name:"License File"
+Is there a LICENSE, LICENSE.md, LICENSE.txt, or COPYING file present?
+PASS: license file found. FAIL: no license file detected.
+
+— AI-SPECIFIC CHECKS (only run if AI codebase: YES; if NO, mark all passed: true with empty findings) —
+
+CHECK 11 — id:11, category:"ai_keys", name:"LLM Keys Not in Frontend"
+${aiRepo ? `Are LLM API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY, sk-*, AIzaSy*, COHERE_API_KEY, etc.) referenced or hardcoded in client-side files (components/, pages/, public/, *.client.ts, *.tsx files that run in the browser)?
+PASS: LLM keys only referenced server-side (api/, lib/ai/, server/). FAIL: key references in frontend/client files — be specific.` : "SKIP — not an AI codebase. Return passed: true, findings: []."}
+
+CHECK 12 — id:12, category:"ai_rate_limit", name:"AI Rate Limiting"
+${aiRepo ? `Is there any rate limiting, retry logic, or throttling applied to routes that call AI APIs?
+Look for: rate-limit middleware, exponential backoff, p-retry, bottleneck, upstash ratelimit, or manual cooldown logic near AI API calls.
+PASS: rate limiting or retry logic found. FAIL: AI API routes have no rate limiting — name the unprotected route.` : "SKIP — not an AI codebase. Return passed: true, findings: []."}
+
+CHECK 13 — id:13, category:"ai_prompts", name:"System Prompts Server-Side"
+${aiRepo ? `Are system prompts or AI instructions defined only in server-side files?
+Look for: string literals containing "You are a", "system:", prompt templates in client-side .tsx or public files.
+PASS: all prompt definitions are server-side. FAIL: prompt content found in frontend files — name the file.` : "SKIP — not an AI codebase. Return passed: true, findings: []."}
+
+CHECK 14 — id:14, category:"ai_error_handling", name:"AI API Error Handling"
+${aiRepo ? `Are calls to AI APIs (openai.*, anthropic.*, generateText, streamText, etc.) wrapped in try/catch with error handling for rate limits, timeouts, and API failures?
+PASS: AI API calls have error handling. FAIL: bare AI API calls with no error handling — name examples.` : "SKIP — not an AI codebase. Return passed: true, findings: []."}
+
 Rules for findings:
 - If PASS: findings must be empty []
 - If FAIL: list the specific files and issues. Each finding: { "file": "<path>", "line": <number or omit if unknown>, "detail": "<concise one-line description>" }
 
-Return ONLY valid JSON, no markdown fences:
+Return ONLY valid JSON, no markdown fences — all 14 checks:
 {
   "checks": [
     { "id": 1, "name": "Env Vars Documented", "category": "env_vars", "passed": true, "findings": [] },
-    { "id": 2, "name": "No Hardcoded Secrets", "category": "secrets", "passed": false, "findings": [{ "file": "src/config.ts", "line": 14, "detail": "Hardcoded API key: 'sk-abc123...'" }] },
+    { "id": 2, "name": "No Hardcoded Secrets", "category": "secrets", "passed": true, "findings": [] },
     { "id": 3, "name": "README with Setup", "category": "readme", "passed": true, "findings": [] },
     { "id": 4, "name": "No Debug Logs", "category": "console_logs", "passed": true, "findings": [] },
     { "id": 5, "name": "Error Handling", "category": "error_handling", "passed": true, "findings": [] },
-    { "id": 6, "name": "Dependencies Pinned", "category": "dependencies", "passed": true, "findings": [] }
+    { "id": 6, "name": "Dependencies Pinned", "category": "dependencies", "passed": true, "findings": [] },
+    { "id": 7, "name": "Tests Present", "category": "tests", "passed": true, "findings": [] },
+    { "id": 8, "name": "CI/CD Configured", "category": "ci_cd", "passed": true, "findings": [] },
+    { "id": 9, "name": "No TODOs in Production", "category": "todos", "passed": true, "findings": [] },
+    { "id": 10, "name": "License File", "category": "license", "passed": true, "findings": [] },
+    { "id": 11, "name": "LLM Keys Not in Frontend", "category": "ai_keys", "passed": true, "findings": [] },
+    { "id": 12, "name": "AI Rate Limiting", "category": "ai_rate_limit", "passed": true, "findings": [] },
+    { "id": 13, "name": "System Prompts Server-Side", "category": "ai_prompts", "passed": true, "findings": [] },
+    { "id": 14, "name": "AI API Error Handling", "category": "ai_error_handling", "passed": true, "findings": [] }
   ]
 }`,
       },
@@ -224,6 +295,14 @@ const POINTS: Record<string, number> = {
   console_logs: 15,
   error_handling: 15,
   dependencies: 15,
+  tests: 10,
+  ci_cd: 10,
+  todos: 10,
+  license: 5,
+  ai_keys: 20,
+  ai_rate_limit: 10,
+  ai_prompts: 10,
+  ai_error_handling: 10,
 };
 
 export async function POST(req: NextRequest) {
