@@ -36,7 +36,7 @@ export async function generateAssessment(input: {
       model: "claude-sonnet-4-6",
       max_tokens: 300,
       system:
-        "Generate a concise technical assessment of this codebase. Be specific — reference actual files, patterns, and failures. 3-4 sentences. Direct but fair. Do not include any headers or labels — just the assessment text.",
+        "Generate a concise technical assessment focused on production readiness. Be specific — reference actual files, patterns, and failures. Address both what is broken today and what will not survive real load. 3-4 sentences. Direct but fair. No headers or labels — just the assessment text.",
       messages: [{ role: "user", content: userPrompt }],
     });
 

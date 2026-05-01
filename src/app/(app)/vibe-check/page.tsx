@@ -34,7 +34,8 @@ import { RepairPlan, type RepairStep } from "@/components/RepairPlan";
 import { FlowDiagram } from "@/components/output/FlowDiagram";
 import { FollowUpQA } from "@/components/FollowUpQA";
 import { GithubActionsGenerator } from "@/components/GithubActionsGenerator";
-import type { CheckResult } from "@/app/api/vibe-check/route";
+import { SystemsAnalysis } from "@/components/SystemsAnalysis";
+import type { CheckResult, SystemsAnalysis as SystemsAnalysisData } from "@/app/api/vibe-check/route";
 import { saveShipHistory, getShipHistory, type ShipHistoryEntry } from "@/lib/utils/history";
 import { exportShipCheckMarkdown } from "@/lib/utils/export-markdown";
 import { encodeShareResult, decodeShipShare, buildShareUrl } from "@/lib/utils/share";
@@ -325,6 +326,7 @@ export default function ShipCheckPage() {
   const [architectureDiagram, setArchitectureDiagram] = useState("");
   const [assessment, setAssessment] = useState("");
   const [builderType, setBuilderType] = useState("");
+  const [systemsAnalysis, setSystemsAnalysis] = useState<SystemsAnalysisData | null>(null);
   const [showRoastCard, setShowRoastCard] = useState(false);
   const [expandedFix, setExpandedFix] = useState<number | null>(null);
   const [copiedMd, setCopiedMd] = useState(false);
@@ -370,6 +372,7 @@ export default function ShipCheckPage() {
       setArchitectureDiagram(auditData.architectureDiagram ?? "");
       setAssessment(auditData.assessment ?? "");
       setBuilderType(auditData.builderType ?? "");
+      setSystemsAnalysis(auditData.systemsAnalysis ?? null);
       setChecks((auditData.checks as CheckResult[]).sort((a, b) => a.id - b.id));
       const verdict = getVerdictTier(auditData.shipScore);
       const entry: ShipHistoryEntry = {
@@ -401,6 +404,7 @@ export default function ShipCheckPage() {
     setArchitectureDiagram("");
     setAssessment("");
     setBuilderType("");
+    setSystemsAnalysis(null);
     setShowRoastCard(false);
     setExpandedFix(null);
   }
@@ -547,9 +551,9 @@ export default function ShipCheckPage() {
           Ship Check
         </h1>
         <p className="text-sm text-muted-foreground">
-          6 automated checks on any public GitHub repo. Get a Ship Score out of 100
-          and a verdict — from "Do Not Ship" to "Payment Ready" — so you know exactly
-          where you stand before going live.
+          14 automated checks on any public GitHub repo — plus a systems stress
+          test. Get a Ship Score out of 100, find out exactly what breaks first
+          at scale, and know where you stand before going live.
         </p>
       </div>
 
@@ -640,7 +644,7 @@ export default function ShipCheckPage() {
                 active: phase === "fetching",
               },
               {
-                label: "Running 6 ship-readiness checks",
+                label: "Running 14 checks + systems stress test",
                 done: false,
                 active: phase === "analyzing",
               },
@@ -687,7 +691,7 @@ export default function ShipCheckPage() {
             <div>
               <p className="text-lg font-bold text-foreground">Ship Score</p>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {passedCount} of 6 checks passed
+                {passedCount} of 14 checks passed
               </p>
             </div>
             {(() => {
@@ -700,6 +704,9 @@ export default function ShipCheckPage() {
               );
             })()}
           </div>
+
+          {/* Systems stress test */}
+          {systemsAnalysis && <SystemsAnalysis data={systemsAnalysis} />}
 
           {/* Files map */}
           <FilesMap files={filesMap} />
