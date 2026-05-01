@@ -3,6 +3,8 @@ import { z } from "zod";
 import { getAnthropicClient } from "@/lib/ai/client";
 import { generateArchitectureDiagram } from "@/lib/ai/architecture-diagram";
 import { generateAssessment } from "@/lib/ai/generate-assessment";
+import { generateSystemsAnalysis, type SystemsAnalysis } from "@/lib/ai/generate-systems-analysis";
+export type { SystemsAnalysis };
 
 const schema = z.object({
   repoCode: z.string().min(100).max(35_000),
@@ -331,7 +333,7 @@ export async function POST(req: NextRequest) {
         )
       )
       .slice(0, 5);
-    const [validated, architectureDiagram, { assessment, builderType }] =
+    const [validated, architectureDiagram, { assessment, builderType }, systemsAnalysis] =
       await Promise.all([
         validateFindings(checks, repoCode),
         generateArchitectureDiagram(repoCode, {
@@ -343,6 +345,11 @@ export async function POST(req: NextRequest) {
           score: prelimScore,
           failedChecks: failedCheckNames,
           fileFindings,
+        }),
+        generateSystemsAnalysis({
+          repoCode,
+          techStack: stack.techStack,
+          failedChecks: failedCheckNames,
         }),
       ]);
     const shipScore = validated.reduce(
@@ -357,6 +364,7 @@ export async function POST(req: NextRequest) {
       checks: validated,
       assessment,
       builderType,
+      systemsAnalysis,
     });
   } catch (err) {
     return NextResponse.json(
