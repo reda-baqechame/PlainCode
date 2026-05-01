@@ -37,7 +37,7 @@ export default function DiffPage() {
           Explain the Diff
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Paste the before and after versions — get an explanation of what changed and why it matters.
+          Paste the before and after versions — understand what changed, the blast radius on the rest of the system, and whether this is a proper fix or a workaround.
         </p>
       </div>
 
@@ -61,7 +61,7 @@ export default function DiffPage() {
         </button>
       </div>
 
-      <ExplanationPanel stream={state} />
+      <ExplanationPanel stream={state} isDiff={true} />
     </div>
   );
 }

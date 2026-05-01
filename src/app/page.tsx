@@ -4,14 +4,16 @@ import {
   Sparkles,
   BookOpen,
   GitCompare,
-  MessageSquare,
   GitBranch,
   Lock,
   Shield,
   ChevronRight,
-  CheckCircle2,
   Zap,
   ArrowRight,
+  Network,
+  Layers,
+  Database,
+  AlertTriangle,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { DemoShipCheck } from "@/components/DemoShipCheck";
@@ -22,14 +24,14 @@ const tools = [
     icon: <Sparkles className="h-6 w-6 text-blue-500" />,
     accent: "border-blue-500",
     name: "Explain",
-    badge: "Most popular",
+    badge: "Start here",
     badgeColor: "bg-blue-500/10 text-blue-500",
     href: "/explain",
-    what: "Paste any code snippet and get a verified, structured explanation — Summary, Step-by-Step Breakdown, Simple Analogy, and Data Flow — tailored to whoever needs to read it.",
+    what: "Paste any code snippet and understand it as part of a system — what it does, what it depends on, and what breaks if it fails. Five audience levels, from ELI5 to Developer Peer.",
     steps: [
       "Paste your code snippet into the editor",
       "Pick your audience — ELI5 up to Developer Peer",
-      "Click Explain and get a validated breakdown in seconds",
+      "Get a full explanation including where this fits in a system",
     ],
     cta: "Try Explain",
     ctaClass: "bg-blue-500 hover:bg-blue-600 text-white",
@@ -41,11 +43,11 @@ const tools = [
     badge: "For PR reviews",
     badgeColor: "bg-green-500/10 text-green-500",
     href: "/diff",
-    what: "Paste the before and after versions of any code change. Understand exactly what changed, why it matters, and what edge cases to watch — without reading every line.",
+    what: "Before merging any change, see the blast radius. Paste before and after — understand what changed, what it affects downstream, and whether this is a real fix or a workaround.",
     steps: [
-      "Paste the old version of the code on the left",
-      "Paste the new version on the right",
-      "Get a plain-English diff explanation instantly",
+      "Paste the old version on the left, new version on the right",
+      "Get a plain-English explanation of what changed and why",
+      "See the blast radius: what this change breaks or improves",
     ],
     cta: "Try Diff",
     ctaClass: "bg-green-500 hover:bg-green-600 text-white",
@@ -54,14 +56,14 @@ const tools = [
     icon: <Shield className="h-6 w-6 text-orange-500" />,
     accent: "border-orange-500",
     name: "Defend",
-    badge: "For repo owners",
+    badge: "Reality check",
     badgeColor: "bg-orange-500/10 text-orange-500",
     href: "/defend",
-    what: "Point it at a public GitHub repo. It reads your codebase, generates 5 adversarial questions that only the person who built it could answer, then scores your responses 0–100.",
+    what: "Point it at your GitHub repo. Five adversarial questions grounded in your actual code — architecture, edge cases, security, scalability, design tradeoffs. Find out if you can own what you shipped.",
     steps: [
       "Paste a public GitHub repository URL",
       "Answer 5 hard questions about your own code",
-      "Get a Defense Score with detailed per-answer feedback",
+      "Get a Defense Score and a verdict on whether you actually understand your system",
     ],
     cta: "Try Defend",
     ctaClass: "bg-orange-500 hover:bg-orange-600 text-white",
@@ -70,14 +72,14 @@ const tools = [
     icon: <Zap className="h-6 w-6 text-yellow-500" />,
     accent: "border-yellow-500",
     name: "Ship Check",
-    badge: "Pre-ship audit",
+    badge: "Pre-ship",
     badgeColor: "bg-yellow-500/10 text-yellow-600",
     href: "/vibe-check",
-    what: "Paste a public repo URL and get a Ship Score out of 100 — plus a verdict from \"Do Not Ship\" to \"Payment Ready\". Six automated checks (secrets, env vars, README, debug logs, error handling, dependencies) tell you exactly what to fix before you go live.",
+    what: "14 automated checks plus a systems stress test. Get a Ship Score out of 100 and a Failure Cascade — exactly what breaks first when your prototype meets real load.",
     steps: [
       "Paste a public GitHub repository URL",
-      "Wait ~20 seconds while 6 checks run",
-      "Get your verdict and a file-level breakdown of every failure",
+      "Wait ~25 seconds while 14 checks + a systems stress test run",
+      "Get your verdict, the failure chain at scale, and a file-level breakdown",
     ],
     cta: "Run Ship Check",
     ctaClass: "bg-yellow-500 hover:bg-yellow-600 text-white",
@@ -87,46 +89,52 @@ const tools = [
 /* ─── Feature grid ───────────────────────────────────────────────────────── */
 const features = [
   {
-    icon: <Sparkles className="h-5 w-5 text-blue-500" />,
-    title: "3-Layer AI Accuracy",
+    icon: <Network className="h-5 w-5 text-blue-500" />,
+    title: "Systems Context",
     description:
-      "Three Claude models run in sequence: one checks intent, one generates the explanation, one validates it for errors. Mistakes are caught and corrected automatically — before you see anything.",
+      "Every explanation includes where the code fits in a system, what it depends on, and what breaks if it fails. Not just what the code does — but what it means for the system around it.",
   },
   {
     icon: <BookOpen className="h-5 w-5 text-purple-500" />,
     title: "5 Audience Levels",
     description:
-      "ELI5, Non-Technical, Business Context, Technical Non-Dev, or Developer Peer. The same code is explained completely differently depending on who's reading — not a one-size-fits-all dump.",
+      "ELI5, Non-Technical, Business Context, Technical Non-Dev, or Developer Peer. The same code explained completely differently depending on who's reading — not a one-size-fits-all dump.",
   },
   {
     icon: <GitCompare className="h-5 w-5 text-green-500" />,
-    title: "Diff Explanations",
+    title: "Blast Radius on Every Diff",
     description:
-      "Understand what a code change actually does without reading it line by line. Paste before and after — get a structured summary of what changed, what was removed, and why it matters.",
+      "Understand what a code change actually does to your system — what it affects downstream, whether it's breaking, and whether it improves or worsens resilience. Before you merge.",
   },
   {
-    icon: <MessageSquare className="h-5 w-5 text-yellow-500" />,
-    title: "Q&A Follow-ups",
+    icon: <AlertTriangle className="h-5 w-5 text-red-500" />,
+    title: "Failure Cascade Analysis",
     description:
-      "After any explanation, ask follow-up questions with full context preserved. 'Why is this approach faster?' gets a real, grounded answer — not a generic response that ignores your actual code.",
-  },
-  {
-    icon: <GitBranch className="h-5 w-5 text-red-500" />,
-    title: "Flow Diagrams",
-    description:
-      "Every explanation auto-generates a Mermaid.js flowchart showing how the code's logic flows. Rendered inline, downloadable as SVG.",
+      "Ship Check runs a systems stress test: three specific failure chains grounded in your actual files — what breaks first at 10x load, and why. Not generic advice — specific to your code.",
   },
   {
     icon: <Shield className="h-5 w-5 text-orange-500" />,
     title: "Defend Mode",
     description:
-      "5 adversarial questions about your own repo — covering architecture, edge cases, security, scalability, and design tradeoffs. Scored 0–100 per answer with specific feedback.",
+      "5 adversarial questions covering architecture, edge cases, security, scalability, and design decisions. Scored 0–100 per answer. Find out if you can actually stand by what you shipped.",
   },
   {
-    icon: <Zap className="h-5 w-5 text-yellow-500" />,
-    title: "Ship Check",
+    icon: <Layers className="h-5 w-5 text-yellow-500" />,
+    title: "3-Layer AI Validation",
     description:
-      "6 automated checks in ~20 seconds. Get a verdict — Do Not Ship, Prototype Only, Demo Ready, Public Beta Ready, Launch Ready, or Payment Ready — with file-level findings for every failure.",
+      "Three Claude models run in sequence: one reads for intent, one generates output, one validates for errors. Built as a system — no single point of failure in the pipeline itself.",
+  },
+  {
+    icon: <GitBranch className="h-5 w-5 text-cyan-500" />,
+    title: "Architecture Diagrams",
+    description:
+      "Ship Check auto-generates a Mermaid architecture diagram of your repo. Every Explain also generates a logic flow diagram. See the structure, not just the code.",
+  },
+  {
+    icon: <Database className="h-5 w-5 text-teal-500" />,
+    title: "Q&A with Full Context",
+    description:
+      "After any explanation or audit, ask follow-up questions with full code context preserved. 'What happens if this function throws?' gets a grounded answer — not a generic one.",
   },
   {
     icon: <Lock className="h-5 w-5 text-slate-500" />,
@@ -150,13 +158,16 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link href="/explain" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              App
+              Explain
             </Link>
             <Link href="/vibe-check" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Ship Check
             </Link>
+            <Link href="/defend" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Defend
+            </Link>
             <Link
-              href="/explain"
+              href="/vibe-check"
               className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors"
             >
               Try free
@@ -169,16 +180,16 @@ export default function LandingPage() {
       {/* ── Hero ── */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full mb-6 font-medium">
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          Free · No sign-up required · 5,000+ repos checked
+          <Zap className="h-3.5 w-3.5" />
+          Free · No sign-up · 5,000+ repos checked
         </div>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground tracking-tight leading-tight">
-          Know if your code is ready to ship —{" "}
-          <span className="text-primary">before your users find out it isn&apos;t</span>
+          Prototypes impress.{" "}
+          <span className="text-primary">Systems survive.</span>
         </h1>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Ship Check, Defend, and Explain — three tools that give you specific, file-level answers
-          about your codebase in under 30 seconds.
+          PlainCode helps you close the gap. Four tools that push you to think one level deeper —
+          from code to system, from working to production-grade, from shipped to owned.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
           <Link
@@ -186,7 +197,7 @@ export default function LandingPage() {
             className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm"
           >
             <Zap className="h-4 w-4" />
-            Run Ship Check
+            Stress-test your repo
             <ChevronRight className="h-4 w-4" />
           </Link>
           <Link
@@ -194,14 +205,14 @@ export default function LandingPage() {
             className="flex items-center gap-2 border border-border px-6 py-3 rounded-lg font-semibold hover:bg-accent transition-colors text-sm"
           >
             <Shield className="h-4 w-4" />
-            Defend your repo
+            Defend your code
           </Link>
           <Link
             href="/explain"
             className="flex items-center gap-2 border border-border px-6 py-3 rounded-lg font-semibold hover:bg-accent transition-colors text-sm"
           >
             <Sparkles className="h-4 w-4" />
-            Explain some code
+            Explain a snippet
           </Link>
         </div>
       </section>
@@ -214,18 +225,20 @@ export default function LandingPage() {
         <div className="rounded-xl border border-border bg-card p-8 space-y-4">
           <h2 className="text-xl font-bold text-foreground">What is PlainCode?</h2>
           <p className="text-muted-foreground leading-relaxed">
-            PlainCode is a set of AI-powered tools that help developers, code reviewers, engineering
-            managers, and learners understand, audit, and defend code — without needing to read every
-            line themselves. Whether you&apos;re onboarding to a new codebase, reviewing a pull request,
-            preparing to present your project, or checking if something is ready to ship, PlainCode
-            gives you structured answers in seconds.
+            PlainCode exists because vibe coding produces prototypes, not systems. Every tool here pushes
+            you to think one level deeper than the code in front of you — toward the system it belongs to,
+            the dependencies it creates, and the failure modes it introduces.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            Unlike a plain ChatGPT prompt, every result runs through a{" "}
-            <span className="text-foreground font-medium">3-layer verification pipeline</span>: one
-            model reads the code for intent and context, a second generates the structured output, and
-            a third validates it for accuracy before you see anything. Errors are caught and corrected
-            automatically — not silently passed through.
+            Whether you&apos;re explaining a snippet to a teammate, reviewing a PR, defending your
+            architecture, or stress-testing your pre-ship code, you&apos;re always asking the same
+            question: <span className="text-foreground font-medium">does this hold up?</span>
+          </p>
+          <p className="text-muted-foreground leading-relaxed">
+            Unlike a plain AI prompt, every result runs through a{" "}
+            <span className="text-foreground font-medium">3-layer validation pipeline</span> — one model
+            reads for intent, one generates the output, one checks it for errors. The pipeline itself is
+            built as a system. There are no single points of failure.
           </p>
         </div>
       </section>
@@ -233,7 +246,7 @@ export default function LandingPage() {
       {/* ── Tools ── */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-10">
-          <h2 className="text-2xl font-bold text-foreground">Four tools, one purpose</h2>
+          <h2 className="text-2xl font-bold text-foreground">Four ways to think in systems</h2>
           <p className="text-sm text-muted-foreground mt-2">Pick the one that fits what you need right now.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -312,7 +325,7 @@ export default function LandingPage() {
               ring: "ring-primary/20 bg-primary/10",
               title: "Deep Generation",
               model: "Claude Sonnet",
-              desc: "Uses the intent context to generate your structured output — explanation, questions, or audit — tuned precisely to your audience or use case. No generic filler.",
+              desc: "Uses the intent context to generate your structured output — explanation, questions, or audit — including the systems context of what this code connects to and what it breaks if it fails.",
             },
             {
               step: "3",
@@ -358,22 +371,22 @@ export default function LandingPage() {
 
       {/* ── CTA ── */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <h2 className="text-3xl font-bold text-foreground">Start for free — no account needed</h2>
-        <p className="mt-3 text-muted-foreground">Paste your first snippet in 30 seconds.</p>
+        <h2 className="text-3xl font-bold text-foreground">Start thinking in systems — free, no account needed</h2>
+        <p className="mt-3 text-muted-foreground">Paste your first snippet or repo in 30 seconds.</p>
         <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
           <Link
-            href="/explain"
+            href="/vibe-check"
             className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+          >
+            <Zap className="h-4 w-4" />
+            Run Ship Check
+          </Link>
+          <Link
+            href="/explain"
+            className="inline-flex items-center gap-2 border border-border px-8 py-3 rounded-lg font-semibold hover:bg-accent transition-colors"
           >
             <Sparkles className="h-4 w-4" />
             Explain some code
-          </Link>
-          <Link
-            href="/vibe-check"
-            className="inline-flex items-center gap-2 border border-border px-8 py-3 rounded-lg font-semibold hover:bg-accent transition-colors"
-          >
-            <Zap className="h-4 w-4 text-yellow-500" />
-            Ship check a repo
           </Link>
         </div>
       </section>
