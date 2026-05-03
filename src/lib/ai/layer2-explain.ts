@@ -8,6 +8,14 @@ const AUDIENCE_SYSTEM_PROMPTS: Record<AudienceLevel, string> = {
   DEVELOPER_PEER: `You explain code peer-to-peer with a fellow developer. Use full technical language: design patterns, complexity, edge cases, code smells, architectural trade-offs, security implications. Be precise and thorough.`,
 };
 
+const SYSTEMS_SECTION_GUIDANCE: Record<AudienceLevel, string> = {
+  ELI5: `One or two plain sentences: what bigger job this is part of, and what would stop working if this broke.`,
+  NON_TECHNICAL: `Two to three sentences: which part of the app or service this belongs to, what it connects to, and what a user would notice if it failed.`,
+  BUSINESS_CONTEXT: `The business layer this belongs to (payments, auth, notifications, data, etc.), which features depend on it, and what the impact is if it goes down or returns wrong results.`,
+  TECHNICAL_NON_DEV: `The system layer this belongs to (infrastructure, data pipeline, integration, service, etc.), what it connects to upstream and downstream, and what fails if it errors or times out.`,
+  DEVELOPER_PEER: `System layer (infrastructure / data / service / integration / presentation), direct dependencies (what this requires to run), what breaks downstream if this throws or returns wrong data, and one scalability consideration (what would need to change at 10x load).`,
+};
+
 export function buildLayer2SystemPrompt(audienceLevel: AudienceLevel): string {
   return `You are PlainCode, an expert code explanation engine.
 
@@ -26,6 +34,9 @@ CRITICAL FORMAT REQUIREMENT: Your response MUST use these exact section delimite
 
 <!-- SECTION:DATAMAP -->
 [What data/information goes in, what comes out, and what transforms]
+
+<!-- SECTION:SYSTEMS -->
+[${SYSTEMS_SECTION_GUIDANCE[audienceLevel]}]
 
 <!-- SECTION:MERMAID -->
 [A Mermaid.js flowchart showing the logic flow. If a diagram is not useful, write: none
@@ -63,9 +74,15 @@ export function buildLayer2UserPrompt(
     ? "Explain what changed between the BEFORE and AFTER versions of this code. Focus on the meaning of the changes, not just that they differ."
     : `Explain this code. The code's inferred purpose is: "${inferredPurpose}". Use this as grounding.`;
 
+  const systemsNote = isDiff
+    ? `For the SYSTEMS section: describe the blast radius of this change — whether it is a breaking change, what other components or flows are affected, and whether this change improves or weakens the resilience of the system.`
+    : `For the SYSTEMS section: describe where this code fits in a larger system using the guidance in your instructions.`;
+
   return `${task}
 
 ${codeBlock}
+
+${systemsNote}
 
 Write your entire response in ${outputLanguage}.
 

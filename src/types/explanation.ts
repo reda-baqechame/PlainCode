@@ -12,6 +12,7 @@ export interface ExplanationResult {
   breakdownText: string;
   analogyText: string;
   dataMapText: string;
+  systemsText: string;
   confidenceScore: number;
   mermaidDiagram?: string;
   layer1Confidence?: number;
@@ -20,7 +21,7 @@ export interface ExplanationResult {
 
 export interface StreamEvent {
   type: "section" | "delta" | "done" | "error" | "confidence";
-  section?: "SUMMARY" | "BREAKDOWN" | "ANALOGY" | "DATAMAP" | "MERMAID";
+  section?: "SUMMARY" | "BREAKDOWN" | "ANALOGY" | "DATAMAP" | "SYSTEMS" | "MERMAID";
   delta?: string;
   confidence?: number;
   error?: string;

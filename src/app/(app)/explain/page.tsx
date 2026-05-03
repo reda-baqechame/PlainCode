@@ -48,7 +48,7 @@ export default function ExplainPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Explain Code</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Paste any code snippet and get a plain English explanation.
+              Paste any snippet — understand what it does, where it fits in a system, and what breaks if it fails.
             </p>
           </div>
 

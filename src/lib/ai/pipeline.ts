@@ -28,10 +28,11 @@ export function parseSections(text: string): Record<string, string> {
     BREAKDOWN: "",
     ANALOGY: "",
     DATAMAP: "",
+    SYSTEMS: "",
     MERMAID: "",
   };
 
-  const sectionNames = ["SUMMARY", "BREAKDOWN", "ANALOGY", "DATAMAP", "MERMAID"];
+  const sectionNames = ["SUMMARY", "BREAKDOWN", "ANALOGY", "DATAMAP", "SYSTEMS", "MERMAID"];
   for (let i = 0; i < sectionNames.length; i++) {
     const current = sectionNames[i];
     const next = sectionNames[i + 1];
@@ -114,7 +115,7 @@ export async function runPipeline(
 
     const stream = client.messages.stream({
       model: "claude-sonnet-4-6",
-      max_tokens: 2000,
+      max_tokens: 2500,
       system: systemPrompt,
       messages: [{ role: "user", content: finalUserPrompt }],
     });
@@ -192,6 +193,7 @@ export async function runPipeline(
       breakdownText: sections.BREAKDOWN,
       analogyText: sections.ANALOGY,
       dataMapText: sections.DATAMAP,
+      systemsText: sections.SYSTEMS,
       mermaidDiagram: sections.MERMAID === "none" || !sections.MERMAID ? undefined : sections.MERMAID,
       confidenceScore: confidence,
       layer1Confidence: layer1.confidence,

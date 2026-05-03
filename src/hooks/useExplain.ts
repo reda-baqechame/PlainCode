@@ -9,6 +9,7 @@ interface StreamState {
     BREAKDOWN: string;
     ANALOGY: string;
     DATAMAP: string;
+    SYSTEMS: string;
     MERMAID: string;
   };
   confidence?: number;
@@ -17,7 +18,7 @@ interface StreamState {
   loading: boolean;
 }
 
-const DEFAULT_SECTIONS = { SUMMARY: "", BREAKDOWN: "", ANALOGY: "", DATAMAP: "", MERMAID: "" };
+const DEFAULT_SECTIONS = { SUMMARY: "", BREAKDOWN: "", ANALOGY: "", DATAMAP: "", SYSTEMS: "", MERMAID: "" };
 
 export function useExplain() {
   const [state, setState] = useState<StreamState>({

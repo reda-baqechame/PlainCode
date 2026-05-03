@@ -1,5 +1,5 @@
 "use client";
-import { BookOpen, Layers, Lightbulb, Database } from "lucide-react";
+import { BookOpen, Layers, Lightbulb, Database, Network } from "lucide-react";
 import { SectionCard } from "./SectionCard";
 import { ConfidenceScore } from "./ConfidenceScore";
 import { FlowDiagram } from "./FlowDiagram";
@@ -12,6 +12,7 @@ interface StreamState {
     BREAKDOWN: string;
     ANALOGY: string;
     DATAMAP: string;
+    SYSTEMS: string;
     MERMAID: string;
   };
   confidence?: number;
@@ -22,9 +23,10 @@ interface StreamState {
 interface Props {
   stream: StreamState;
   code?: string;
+  isDiff?: boolean;
 }
 
-export function ExplanationPanel({ stream, code = "" }: Props) {
+export function ExplanationPanel({ stream, code = "", isDiff = false }: Props) {
   const { sections, currentSection, confidence, done, error } = stream;
 
   if (error) {
@@ -77,6 +79,13 @@ export function ExplanationPanel({ stream, code = "" }: Props) {
         icon={<Database className="h-4 w-4 text-green-500" />}
         content={sections.DATAMAP}
         isStreaming={currentSection === "DATAMAP"}
+      />
+
+      <SectionCard
+        title={isDiff ? "Blast Radius" : "Systems Context"}
+        icon={<Network className="h-4 w-4 text-cyan-500" />}
+        content={sections.SYSTEMS}
+        isStreaming={currentSection === "SYSTEMS"}
       />
 
       {done && sections.MERMAID && sections.MERMAID !== "none" && (
