@@ -21,7 +21,7 @@ function getLabel(score: number) {
 }
 
 export function ConfidenceScore({ score, className }: Props) {
-  const [displayed, setDisplayed] = useState(0);
+  const [displayed, setDisplayed] = useState(score);
 
   useEffect(() => {
     let frame = 0;
