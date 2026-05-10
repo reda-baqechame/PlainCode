@@ -96,7 +96,8 @@ function scoreRingColor(score: number): string {
 function ScoreRing({ score }: { score: number }) {
   const r = 40;
   const circ = 2 * Math.PI * r;
-  const filled = (score / 100) * circ;
+  const clamped = Math.min(100, Math.max(0, score));
+  const filled = (clamped / 100) * circ;
 
   return (
     <div className="relative flex items-center justify-center w-28 h-28">

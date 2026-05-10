@@ -74,7 +74,7 @@ export function FollowUpQA({
         }
       }
 
-      setMessages([...updatedMessages, { role: "assistant", content: assistantContent }]);
+      setMessages([...updatedMessages, { role: "assistant", content: assistantContent || "Sorry, I couldn't generate a response. Please try again." }]);
     } catch {
       setMessages((prev) => [
         ...prev.slice(0, -1),

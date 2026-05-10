@@ -320,10 +320,12 @@ export async function POST(req: NextRequest) {
     const checks = await runChecks(repoCode, stack);
     const dangerHints = checks.filter((c) => !c.passed).map((c) => c.name);
     // Preliminary score — pass/fail never changes during validation
-    const prelimScore = checks.reduce(
+    const totalPossible = checks.reduce((sum, c) => sum + (POINTS[c.category] ?? 0), 0);
+    const rawPrelim = checks.reduce(
       (sum, c) => sum + (c.passed ? (POINTS[c.category] ?? 0) : 0),
       0
     );
+    const prelimScore = Math.round((rawPrelim / totalPossible) * 100);
     const failedCheckNames = checks.filter((c) => !c.passed).map((c) => c.name);
     const fileFindings = checks
       .filter((c) => !c.passed)
@@ -352,10 +354,11 @@ export async function POST(req: NextRequest) {
           failedChecks: failedCheckNames,
         }),
       ]);
-    const shipScore = validated.reduce(
+    const rawShip = validated.reduce(
       (sum, c) => sum + (c.passed ? (POINTS[c.category] ?? 0) : 0),
       0
     );
+    const shipScore = Math.round((rawShip / totalPossible) * 100);
     return NextResponse.json({
       shipScore,
       techStack: stack.techStack,

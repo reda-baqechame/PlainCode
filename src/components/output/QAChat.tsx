@@ -67,7 +67,7 @@ export function QAChat({ code, explanation }: Props) {
       }
 
       // Save assistant reply into local history for next turn
-      setMessages([...updatedMessages, { role: "assistant", content: assistantContent }]);
+      setMessages([...updatedMessages, { role: "assistant", content: assistantContent || "Sorry, I couldn't generate a response. Please try again." }]);
     } catch {
       setMessages((prev) => [
         ...prev.slice(0, -1),
