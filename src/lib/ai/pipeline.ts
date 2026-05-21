@@ -54,16 +54,27 @@ export function parseSections(text: string, sectionNames?: readonly string[]): R
 
   for (let i = 0; i < names.length; i++) {
     const current = names[i];
-    const next = names[i + 1];
     const startMarker = `<!-- SECTION:${current} -->`;
-    const endMarker = next ? `<!-- SECTION:${next} -->` : null;
 
     const startIdx = text.indexOf(startMarker);
     if (startIdx === -1) continue;
 
     const contentStart = startIdx + startMarker.length;
-    const contentEnd = endMarker ? text.indexOf(endMarker) : text.length;
-    sections[current] = text.slice(contentStart, contentEnd === -1 ? text.length : contentEnd).trim();
+
+    // If the model skipped the immediate next section, scan forward through the
+    // remaining section names and stop at the first one that actually appears
+    // after this section's start — so a missing BREAKDOWN doesn't make SUMMARY
+    // swallow ANALOGY / DATAMAP / ... as well.
+    let contentEnd = text.length;
+    for (let j = i + 1; j < names.length; j++) {
+      const candidate = text.indexOf(`<!-- SECTION:${names[j]} -->`, contentStart);
+      if (candidate !== -1) {
+        contentEnd = candidate;
+        break;
+      }
+    }
+
+    sections[current] = text.slice(contentStart, contentEnd).trim();
   }
 
   // Fallback: if no section delimiters found, treat entire text as first section
