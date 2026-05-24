@@ -15,6 +15,8 @@ import { QAChat } from "@/components/output/QAChat";
 import { ApiReferenceTable } from "./ApiReferenceTable";
 import { AnnotatedCode } from "./AnnotatedCode";
 import { DocActionsBar } from "./DocActionsBar";
+import { CommitDocsButton } from "./CommitDocsButton";
+import { exportDocumentMarkdown } from "@/lib/utils/export-markdown";
 import type {
   ApiEntry,
   CodeAnnotation,
@@ -29,6 +31,7 @@ interface Props {
   code: string;
   isRepo?: boolean;
   privacyMode?: boolean;
+  repoUrl?: string;
 }
 
 type RegenType = "FLOWCHART" | "SEQUENCE" | "DATAFLOW";
@@ -85,7 +88,7 @@ function stripFence(text: string): string {
     .trim();
 }
 
-export function DocumentPanel({ stream, code, isRepo = false, privacyMode = false }: Props) {
+export function DocumentPanel({ stream, code, isRepo = false, privacyMode = false, repoUrl }: Props) {
   const { sections, currentSection, confidence, done, error, result } = stream;
 
   const [overrides, setOverrides] = useState<Partial<Record<RegenType, string>>>({});
@@ -192,6 +195,18 @@ export function DocumentPanel({ stream, code, isRepo = false, privacyMode = fals
       </div>
 
       {done && <DocActionsBar data={exportData} code={code} isRepo={isRepo} result={shareResult} />}
+
+      {done && isRepo && repoUrl && (
+        <CommitDocsButton
+          repoUrl={repoUrl}
+          markdown={exportDocumentMarkdown(exportData)}
+          defaultPath={`docs/${(title || "documentation")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .slice(0, 40) || "documentation"}.md`}
+        />
+      )}
 
       <SectionCard
         title="Overview"

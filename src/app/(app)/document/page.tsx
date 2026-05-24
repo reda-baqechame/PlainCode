@@ -42,9 +42,11 @@ export default function DocumentPage() {
   const [fetchError, setFetchError] = useState("");
   const [repoMeta, setRepoMeta] = useState<{ fileCount: number; truncated: boolean } | null>(null);
   const [isRepoResult, setIsRepoResult] = useState(false);
+  const [resultRepoUrl, setResultRepoUrl] = useState("");
 
   const [history, setHistory] = useState<DocumentHistoryEntry[]>([]);
   const [viewed, setViewed] = useState<ViewedDoc | null>(null);
+  const [ghNote, setGhNote] = useState("");
   const lastSavedRef = useRef<unknown>(null);
 
   const { state, document: generate } = useDocument();
@@ -52,6 +54,9 @@ export default function DocumentPage() {
   // Load history + restore a shared doc from the URL hash on mount.
   useEffect(() => {
     setHistory(getDocumentHistory());
+    const gh = new URLSearchParams(window.location.search).get("gh");
+    if (gh === "connected") setGhNote("GitHub connected — you can open a docs PR.");
+    else if (gh === "error") setGhNote("GitHub connection failed. Try again or use a token.");
     if (typeof window !== "undefined" && window.location.hash.startsWith("#d=")) {
       const encoded = window.location.hash.slice(3);
       const data = decodeDocumentShare(encoded);
@@ -111,6 +116,7 @@ export default function DocumentPage() {
       }
       setRepoMeta({ fileCount: data.fileCount, truncated: data.truncated });
       setIsRepoResult(true);
+      setResultRepoUrl(repoUrl.trim());
       generate({ code: data.repoCode, outputLanguage, privacyMode, isRepo: true });
     } catch {
       setFetchError("Could not reach the repository. Check the URL and try again.");
@@ -257,6 +263,7 @@ export default function DocumentPage() {
           </button>
 
           {fetchError && <p className="text-xs text-destructive">{fetchError}</p>}
+          {ghNote && <p className="text-xs text-muted-foreground">{ghNote}</p>}
 
           {privacyMode && (
             <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -338,6 +345,7 @@ export default function DocumentPage() {
               code={sourceMode === "repo" ? "" : code}
               isRepo={isRepoResult}
               privacyMode={privacyMode}
+              repoUrl={isRepoResult ? resultRepoUrl : undefined}
             />
           )}
         </div>
