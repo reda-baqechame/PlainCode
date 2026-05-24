@@ -29,6 +29,32 @@ export interface DocumentStreamState {
   loading: boolean;
 }
 
+// Rebuilds a completed stream state from a stored / shared result so the same
+// DocumentPanel can render it without re-calling the API.
+export function streamStateFromResult(result: DocumentResult): DocumentStreamState {
+  return {
+    currentSection: "",
+    sections: {
+      TITLE: result.title,
+      OVERVIEW: result.overview,
+      PURPOSE: result.purpose,
+      API: "",
+      STEPS: result.steps,
+      FLOWCHART: result.flowchart,
+      SEQUENCE: result.sequenceDiagram,
+      DATAFLOW: result.dataflow,
+      EXAMPLE: result.example,
+      EDGECASES: result.edgeCases,
+      COMPLEXITY: result.complexity,
+      ANNOTATIONS: "",
+    },
+    confidence: result.confidenceScore,
+    result,
+    done: true,
+    loading: false,
+  };
+}
+
 export function useDocument() {
   const [state, setState] = useState<DocumentStreamState>({
     currentSection: "",

@@ -152,7 +152,7 @@ export function DocumentPanel({ stream, code, isRepo = false }: Props) {
         {done && confidence !== undefined && <ConfidenceScore score={confidence} />}
       </div>
 
-      {done && <DocActionsBar data={exportData} code={code} isRepo={isRepo} />}
+      {done && <DocActionsBar data={exportData} code={code} isRepo={isRepo} result={result ?? null} />}
 
       <SectionCard
         title="Overview"

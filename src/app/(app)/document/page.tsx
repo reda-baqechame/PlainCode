@@ -1,14 +1,35 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { CodeInput } from "@/components/explain/CodeInput";
 import { LanguageSelector } from "@/components/explain/LanguageSelector";
 import { GithubUrlInput } from "@/components/ui/GithubUrlInput";
 import { DocumentPanel } from "@/components/document/DocumentPanel";
-import { useDocument } from "@/hooks/useDocument";
-import { Loader2, FileText, Lock, Code2, Github } from "lucide-react";
+import { useDocument, streamStateFromResult, type DocumentStreamState } from "@/hooks/useDocument";
+import {
+  getDocumentHistory,
+  saveDocumentHistory,
+  deleteDocumentHistory,
+  type DocumentHistoryEntry,
+} from "@/lib/utils/history";
+import { decodeDocumentShare } from "@/lib/utils/share";
+import { Loader2, FileText, Lock, Code2, Github, History, X, FolderGit2 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 type SourceMode = "paste" | "repo";
+
+interface ViewedDoc {
+  stream: DocumentStreamState;
+  code: string;
+  isRepo: boolean;
+}
+
+function newId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
 
 export default function DocumentPage() {
   const [sourceMode, setSourceMode] = useState<SourceMode>("paste");
@@ -22,13 +43,52 @@ export default function DocumentPage() {
   const [repoMeta, setRepoMeta] = useState<{ fileCount: number; truncated: boolean } | null>(null);
   const [isRepoResult, setIsRepoResult] = useState(false);
 
+  const [history, setHistory] = useState<DocumentHistoryEntry[]>([]);
+  const [viewed, setViewed] = useState<ViewedDoc | null>(null);
+  const lastSavedRef = useRef<unknown>(null);
+
   const { state, document: generate } = useDocument();
+
+  // Load history + restore a shared doc from the URL hash on mount.
+  useEffect(() => {
+    setHistory(getDocumentHistory());
+    if (typeof window !== "undefined" && window.location.hash.startsWith("#d=")) {
+      const encoded = window.location.hash.slice(3);
+      const data = decodeDocumentShare(encoded);
+      if (data?.result) {
+        setViewed({
+          stream: streamStateFromResult(data.result),
+          code: "",
+          isRepo: data.isRepo,
+        });
+      }
+    }
+  }, []);
+
+  // Persist each completed generation to local history.
+  useEffect(() => {
+    if (state.done && state.result && state.result !== lastSavedRef.current) {
+      lastSavedRef.current = state.result;
+      const entry: DocumentHistoryEntry = {
+        id: newId(),
+        title: state.result.title || "Untitled",
+        detectedLanguage: state.result.detectedLanguage || "",
+        isRepo: isRepoResult,
+        date: new Date().toISOString(),
+        code: isRepoResult ? "" : code,
+        result: state.result,
+      };
+      saveDocumentHistory(entry);
+      setHistory(getDocumentHistory());
+    }
+  }, [state.done, state.result, isRepoResult, code]);
 
   const generatePaste = useCallback(() => {
     if (!code.trim() || state.loading) return;
     setFetchError("");
     setRepoMeta(null);
     setIsRepoResult(false);
+    setViewed(null);
     generate({ code, outputLanguage, privacyMode, isRepo: false });
   }, [code, outputLanguage, privacyMode, state.loading, generate]);
 
@@ -36,6 +96,7 @@ export default function DocumentPage() {
     if (!repoUrl.trim() || state.loading || fetching) return;
     setFetchError("");
     setRepoMeta(null);
+    setViewed(null);
     setFetching(true);
     try {
       const res = await fetch("/api/fetch-repo", {
@@ -74,8 +135,24 @@ export default function DocumentPage() {
     return () => window.removeEventListener("keydown", handler);
   }, [handleGenerate]);
 
+  const reopen = (entry: DocumentHistoryEntry) => {
+    setViewed({
+      stream: streamStateFromResult(entry.result),
+      code: entry.code,
+      isRepo: entry.isRepo,
+    });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const removeEntry = (id: string) => {
+    deleteDocumentHistory(id);
+    setHistory(getDocumentHistory());
+  };
+
   const busy = state.loading || fetching;
-  const hasOutput = state.sections.TITLE || state.sections.OVERVIEW || state.currentSection;
+  const liveHasOutput = state.sections.TITLE || state.sections.OVERVIEW || state.currentSection;
+  const showViewed = !!viewed && !busy && !liveHasOutput;
+  const hasOutput = showViewed || liveHasOutput || busy;
   const canSubmit = sourceMode === "repo" ? !!repoUrl.trim() : !!code.trim();
 
   return (
@@ -179,15 +256,55 @@ export default function DocumentPage() {
             )}
           </button>
 
-          {fetchError && (
-            <p className="text-xs text-destructive">{fetchError}</p>
-          )}
+          {fetchError && <p className="text-xs text-destructive">{fetchError}</p>}
 
           {privacyMode && (
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Lock className="h-3 w-3" />
               Privacy mode: your code is never stored or used for training.
             </p>
+          )}
+
+          {/* Recent documents */}
+          {history.length > 0 && (
+            <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                <History className="h-3.5 w-3.5 text-muted-foreground" />
+                Recent documents
+              </div>
+              <div className="space-y-1">
+                {history.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent/60 transition-colors"
+                  >
+                    <button
+                      onClick={() => reopen(entry)}
+                      className="flex-1 flex items-center gap-2 min-w-0 text-left"
+                    >
+                      {entry.isRepo ? (
+                        <FolderGit2 className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                      ) : (
+                        <Code2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      )}
+                      <span className="text-xs text-foreground truncate">{entry.title}</span>
+                      {entry.detectedLanguage && (
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {entry.detectedLanguage}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => removeEntry(entry.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                      aria-label="Remove from history"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           <div className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground space-y-1">
@@ -198,14 +315,14 @@ export default function DocumentPage() {
               <li>Three visual diagrams: control flow, sequence, data flow</li>
               <li>Usage example, edge cases, and complexity notes</li>
               <li>{sourceMode === "repo" ? "Project-level architecture from your whole repo" : "Inline annotated source code"}</li>
-              <li>Follow-up Q&amp;A, copy as Markdown, and docstring export</li>
+              <li>Follow-up Q&amp;A, shareable link, Markdown &amp; docstring export</li>
             </ul>
           </div>
         </div>
 
         {/* Right: Output */}
         <div>
-          {!busy && !hasOutput ? (
+          {!hasOutput ? (
             <div className="h-full min-h-[400px] flex items-center justify-center rounded-xl border-2 border-dashed border-border">
               <div className="text-center text-muted-foreground space-y-2 px-8">
                 <FileText className="h-10 w-10 mx-auto opacity-30" />
@@ -213,6 +330,8 @@ export default function DocumentPage() {
                 <p className="text-xs">Free for everyone · No sign-up required</p>
               </div>
             </div>
+          ) : showViewed && viewed ? (
+            <DocumentPanel stream={viewed.stream} code={viewed.code} isRepo={viewed.isRepo} />
           ) : (
             <DocumentPanel
               stream={state}
