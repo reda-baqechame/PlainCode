@@ -173,6 +173,8 @@ export function FlowDiagram({
         <div
           ref={containerRef}
           className="overflow-auto"
+          role="img"
+          aria-label={title}
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       ) : (

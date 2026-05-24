@@ -146,7 +146,7 @@ REMINDER: All twelve sections are required and must appear in the exact order sp
   return `Generate documentation for this code. Inferred purpose: "${inferredPurpose}". Detected language: ${detectedLanguage}.
 
 \`\`\`
-${code.slice(0, 8000)}
+${code.slice(0, 16000)}
 \`\`\`
 
 Write all prose sections in ${outputLanguage}. Keep code identifiers, diagram syntax, and JSON keys in their original form (English / source language).
@@ -202,7 +202,7 @@ Output ONLY the raw Mermaid diagram source. No markdown code fences, no commenta
   const user = `${codeNote}
 
 \`\`\`
-${code.slice(0, isRepo ? 30000 : 8000)}
+${code.slice(0, isRepo ? 30000 : 16000)}
 \`\`\`
 
 Output ONLY the Mermaid diagram source.`;

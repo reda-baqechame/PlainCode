@@ -175,9 +175,10 @@ export default function DocumentPage() {
           </div>
 
           {/* Source toggle */}
-          <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted/40">
+          <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted/40" role="group" aria-label="Documentation source">
             <button
               onClick={() => setSourceMode("paste")}
+              aria-pressed={sourceMode === "paste"}
               className={cn(
                 "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                 sourceMode === "paste"
@@ -190,6 +191,7 @@ export default function DocumentPage() {
             </button>
             <button
               onClick={() => setSourceMode("repo")}
+              aria-pressed={sourceMode === "repo"}
               className={cn(
                 "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                 sourceMode === "repo"
