@@ -1,20 +1,23 @@
 "use client";
 import { useState } from "react";
-import { Copy, Check, Download, FileCode2 } from "lucide-react";
+import { Copy, Check, Download, FileCode2, FilePlus2 } from "lucide-react";
 import {
   exportDocumentMarkdown,
   exportDocstrings,
+  injectDocstrings,
   type DocumentExportData,
 } from "@/lib/utils/export-markdown";
 
 interface Props {
   data: DocumentExportData;
+  code: string;
 }
 
-type ActionKey = "markdown" | "download" | "docstrings";
+type ActionKey = "markdown" | "download" | "docstrings" | "inject";
 
-export function DocActionsBar({ data }: Props) {
+export function DocActionsBar({ data, code }: Props) {
   const [confirmed, setConfirmed] = useState<ActionKey | null>(null);
+  const [injectNote, setInjectNote] = useState<string | null>(null);
 
   const flash = (key: ActionKey) => {
     setConfirmed(key);
@@ -49,6 +52,21 @@ export function DocActionsBar({ data }: Props) {
     if (!text) return;
     await navigator.clipboard.writeText(text);
     flash("docstrings");
+  };
+
+  const copyInjected = async () => {
+    const result = injectDocstrings(code, data.apiEntries, data.detectedLanguage);
+    if (result.injected === 0) {
+      setInjectNote("No definitions matched");
+      setTimeout(() => setInjectNote(null), 2500);
+      return;
+    }
+    await navigator.clipboard.writeText(result.code);
+    setInjectNote(
+      `Injected ${result.injected}${result.skipped.length ? ` · ${result.skipped.length} skipped` : ""}`
+    );
+    flash("inject");
+    setTimeout(() => setInjectNote(null), 2500);
   };
 
   const hasApi = data.apiEntries.length > 0;
@@ -101,6 +119,27 @@ export function DocActionsBar({ data }: Props) {
           </>
         )}
       </button>
+
+      <button
+        onClick={copyInjected}
+        disabled={!hasApi}
+        title={hasApi ? "Copy your source with doc-comments inserted above each definition" : "No API entries detected to inject"}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {confirmed === "inject" ? (
+          <>
+            <Check className="h-3.5 w-3.5 text-emerald-500" /> Copied
+          </>
+        ) : (
+          <>
+            <FilePlus2 className="h-3.5 w-3.5" /> Copy Source + Docstrings
+          </>
+        )}
+      </button>
+
+      {injectNote && (
+        <span className="text-xs text-muted-foreground self-center">{injectNote}</span>
+      )}
     </div>
   );
 }

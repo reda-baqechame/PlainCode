@@ -11,6 +11,7 @@ import {
 import { SectionCard } from "@/components/output/SectionCard";
 import { ConfidenceScore } from "@/components/output/ConfidenceScore";
 import { FlowDiagram } from "@/components/output/FlowDiagram";
+import { QAChat } from "@/components/output/QAChat";
 import { ApiReferenceTable } from "./ApiReferenceTable";
 import { AnnotatedCode } from "./AnnotatedCode";
 import { DocActionsBar } from "./DocActionsBar";
@@ -150,7 +151,7 @@ export function DocumentPanel({ stream, code }: Props) {
         {done && confidence !== undefined && <ConfidenceScore score={confidence} />}
       </div>
 
-      {done && <DocActionsBar data={exportData} />}
+      {done && <DocActionsBar data={exportData} code={code} />}
 
       <SectionCard
         title="Overview"
@@ -231,6 +232,16 @@ export function DocumentPanel({ stream, code }: Props) {
       />
 
       {showAnnotated && <AnnotatedCode code={code} annotations={annotations} />}
+
+      {done && (
+        <QAChat
+          code={code}
+          explanation={[sections.OVERVIEW, sections.PURPOSE, sections.STEPS]
+            .filter(Boolean)
+            .join("\n\n")
+            .slice(0, 2800)}
+        />
+      )}
     </div>
   );
 }
