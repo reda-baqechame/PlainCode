@@ -40,7 +40,12 @@ export function useDocument() {
   const abortRef = useRef<AbortController | null>(null);
 
   const document = useCallback(
-    async (params: { code: string; outputLanguage: string; privacyMode: boolean }) => {
+    async (params: {
+      code: string;
+      outputLanguage: string;
+      privacyMode: boolean;
+      isRepo?: boolean;
+    }) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;

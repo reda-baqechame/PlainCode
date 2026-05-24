@@ -11,11 +11,12 @@ import {
 interface Props {
   data: DocumentExportData;
   code: string;
+  isRepo?: boolean;
 }
 
 type ActionKey = "markdown" | "download" | "docstrings" | "inject";
 
-export function DocActionsBar({ data, code }: Props) {
+export function DocActionsBar({ data, code, isRepo = false }: Props) {
   const [confirmed, setConfirmed] = useState<ActionKey | null>(null);
   const [injectNote, setInjectNote] = useState<string | null>(null);
 
@@ -70,6 +71,7 @@ export function DocActionsBar({ data, code }: Props) {
   };
 
   const hasApi = data.apiEntries.length > 0;
+  const canInject = hasApi && !isRepo;
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2">
@@ -120,10 +122,11 @@ export function DocActionsBar({ data, code }: Props) {
         )}
       </button>
 
+      {!isRepo && (
       <button
         onClick={copyInjected}
-        disabled={!hasApi}
-        title={hasApi ? "Copy your source with doc-comments inserted above each definition" : "No API entries detected to inject"}
+        disabled={!canInject}
+        title={canInject ? "Copy your source with doc-comments inserted above each definition" : "No API entries detected to inject"}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {confirmed === "inject" ? (
@@ -136,6 +139,7 @@ export function DocActionsBar({ data, code }: Props) {
           </>
         )}
       </button>
+      )}
 
       {injectNote && (
         <span className="text-xs text-muted-foreground self-center">{injectNote}</span>

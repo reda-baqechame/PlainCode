@@ -6,6 +6,7 @@ const schema = z.object({
   code: z.string().min(1).max(50000),
   outputLanguage: z.string().default("English"),
   privacyMode: z.boolean().default(false),
+  isRepo: z.boolean().default(false),
 });
 
 export async function POST(req: NextRequest) {
@@ -15,13 +16,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const { code, outputLanguage, privacyMode } = parsed.data;
+  const { code, outputLanguage, privacyMode, isRepo } = parsed.data;
 
   const pipelineStream = encodePipelineStream({
     code,
     outputLanguage,
     privacyMode,
     mode: "document",
+    isRepo,
   });
 
   return new Response(pipelineStream, {

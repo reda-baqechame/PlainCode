@@ -112,8 +112,37 @@ export function buildDocumentUserPrompt(
   code: string,
   inferredPurpose: string,
   outputLanguage: string,
-  detectedLanguage: string
+  detectedLanguage: string,
+  isRepo = false
 ): string {
+  if (isRepo) {
+    return `Generate PROJECT-LEVEL documentation for this entire repository. Inferred purpose: "${inferredPurpose}". Primary language: ${detectedLanguage}.
+
+The source below is multiple files concatenated together. Each file begins with a "// FILE: <path>" marker. Treat these markers as file boundaries and document the project as a whole, not any single file.
+
+\`\`\`
+${code.slice(0, 30000)}
+\`\`\`
+
+Repo-specific guidance for each section:
+- TITLE: the project / system name plus a short purpose phrase.
+- OVERVIEW: what the project does as a whole, and its main moving parts.
+- PURPOSE: the problem the project solves and who it is for.
+- API: the key PUBLIC surface across files — entry points, exported functions, main classes, route handlers. Put the originating file path in each entry's description (e.g. "Defined in src/api/foo.ts. ...").
+- STEPS: the end-to-end flow of the primary use case across modules.
+- FLOWCHART: the high-level architecture / module interaction, not line-level control flow.
+- SEQUENCE: a primary request/usage flow showing how modules and external services collaborate.
+- DATAFLOW: how data moves through the system from entry to persistence/output.
+- EXAMPLE: how a developer would run or call the project (CLI invocation, primary function call, or HTTP request).
+- EDGECASES: project-wide failure modes, assumptions, and operational gotchas.
+- COMPLEXITY: notable performance / scalability considerations for the system.
+- ANNOTATIONS: return an empty section (no JSON lines) — line-level annotations do not apply to a multi-file repository.
+
+Write all prose sections in ${outputLanguage}. Keep code identifiers, file paths, diagram syntax, and JSON keys in their original form.
+
+REMINDER: All twelve sections are required and must appear in the exact order specified in your system instructions, each preceded by its <!-- SECTION:X --> delimiter.`;
+  }
+
   return `Generate documentation for this code. Inferred purpose: "${inferredPurpose}". Detected language: ${detectedLanguage}.
 
 \`\`\`

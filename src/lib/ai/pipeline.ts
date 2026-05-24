@@ -20,6 +20,7 @@ export interface PipelineOptions {
   privacyMode: boolean;
   mode?: PipelineMode;
   isDiff?: boolean;
+  isRepo?: boolean;
   codeBefore?: string;
   codeAfter?: string;
 }
@@ -136,6 +137,7 @@ export async function runPipeline(
     privacyMode,
     mode = "explain",
     isDiff,
+    isRepo,
     codeBefore,
     codeAfter,
   } = options;
@@ -161,7 +163,8 @@ export async function runPipeline(
         code,
         layer1.inferredPurpose,
         outputLanguage,
-        layer1.primaryLanguage
+        layer1.primaryLanguage,
+        isRepo
       );
     } else {
       const audience = audienceLevel ?? "DEVELOPER_PEER";

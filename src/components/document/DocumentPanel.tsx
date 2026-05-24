@@ -27,6 +27,7 @@ import type { DocumentExportData } from "@/lib/utils/export-markdown";
 interface Props {
   stream: DocumentStreamState;
   code: string;
+  isRepo?: boolean;
 }
 
 const SECTION_ORDER: DocumentSection[] = [
@@ -81,7 +82,7 @@ function stripFence(text: string): string {
     .trim();
 }
 
-export function DocumentPanel({ stream, code }: Props) {
+export function DocumentPanel({ stream, code, isRepo = false }: Props) {
   const { sections, currentSection, confidence, done, error, result } = stream;
 
   const apiEntries = useMemo<ApiEntry[]>(() => {
@@ -133,7 +134,7 @@ export function DocumentPanel({ stream, code }: Props) {
   const showFlowchart = isSectionComplete("FLOWCHART", stream) && sections.FLOWCHART.trim();
   const showSequence = isSectionComplete("SEQUENCE", stream) && sections.SEQUENCE.trim();
   const showDataflow = isSectionComplete("DATAFLOW", stream) && sections.DATAFLOW.trim();
-  const showAnnotated = isSectionComplete("ANNOTATIONS", stream);
+  const showAnnotated = !isRepo && isSectionComplete("ANNOTATIONS", stream) && annotations.length > 0;
 
   return (
     <div className="space-y-3">
@@ -151,7 +152,7 @@ export function DocumentPanel({ stream, code }: Props) {
         {done && confidence !== undefined && <ConfidenceScore score={confidence} />}
       </div>
 
-      {done && <DocActionsBar data={exportData} code={code} />}
+      {done && <DocActionsBar data={exportData} code={code} isRepo={isRepo} />}
 
       <SectionCard
         title="Overview"
@@ -235,7 +236,7 @@ export function DocumentPanel({ stream, code }: Props) {
 
       {done && (
         <QAChat
-          code={code}
+          code={code.slice(0, 6000)}
           explanation={[sections.OVERVIEW, sections.PURPOSE, sections.STEPS]
             .filter(Boolean)
             .join("\n\n")
