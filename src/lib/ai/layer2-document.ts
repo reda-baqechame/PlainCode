@@ -153,3 +153,59 @@ Write all prose sections in ${outputLanguage}. Keep code identifiers, diagram sy
 
 REMINDER: All twelve sections are required and must appear in the exact order specified in your system instructions, each preceded by its <!-- SECTION:X --> delimiter.`;
 }
+
+export type DiagramType = "FLOWCHART" | "SEQUENCE" | "DATAFLOW";
+
+const DIAGRAM_SPECS: Record<DiagramType, { label: string; rules: string }> = {
+  FLOWCHART: {
+    label: "control-flow flowchart",
+    rules: `- Start with: flowchart TD
+- Simple alphanumeric node IDs (A, B, C1). Labels in quoted square brackets: A["Label"].
+- Use --> for edges, -->|label| for labeled edges, {"..."} for decisions.
+- ASCII only in labels.`,
+  },
+  SEQUENCE: {
+    label: "sequence diagram",
+    rules: `- Start with: sequenceDiagram
+- Declare participants first (participant Client, participant Api, ...).
+- Use ->> for calls and -->> for responses. Format: Caller->>Service: method(args)
+- Short alphanumeric participant names. ASCII only.`,
+  },
+  DATAFLOW: {
+    label: "data-flow diagram (inputs -> transforms -> outputs)",
+    rules: `- Start with: flowchart LR
+- Inputs on the left, transformations in the middle, outputs on the right.
+- Describe each transformation with an edge label: A -->|filter active| B
+- ASCII only.`,
+  },
+};
+
+// Focused prompt to regenerate a single diagram in isolation (no section
+// delimiters, no prose) — used by the per-diagram "regenerate" action.
+export function buildDiagramPrompt(
+  diagramType: DiagramType,
+  code: string,
+  isRepo = false
+): { system: string; user: string } {
+  const spec = DIAGRAM_SPECS[diagramType];
+  const system = `You are PlainCode Document's diagram engine. Produce a single, correct Mermaid.js ${spec.label} for the code provided.
+
+STRICT RULES:
+${spec.rules}
+
+Output ONLY the raw Mermaid diagram source. No markdown code fences, no commentary, no section markers — just the diagram, starting with its required first line.`;
+
+  const codeNote = isRepo
+    ? `The source below is multiple files concatenated, each starting with a "// FILE: <path>" marker. Produce a project / architecture level ${spec.label}.`
+    : `Produce the ${spec.label} for this code.`;
+
+  const user = `${codeNote}
+
+\`\`\`
+${code.slice(0, isRepo ? 30000 : 8000)}
+\`\`\`
+
+Output ONLY the Mermaid diagram source.`;
+
+  return { system, user };
+}

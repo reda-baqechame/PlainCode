@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { buildDocumentSystemPrompt, buildDocumentUserPrompt } from "./layer2-document";
+import {
+  buildDocumentSystemPrompt,
+  buildDocumentUserPrompt,
+  buildDiagramPrompt,
+} from "./layer2-document";
 
 describe("buildDocumentSystemPrompt", () => {
   const sys = buildDocumentSystemPrompt();
@@ -57,5 +61,32 @@ describe("buildDocumentUserPrompt — repo mode", () => {
     const out = buildDocumentUserPrompt(big, "x", "English", "TypeScript", true);
     // 8000-char snippet cap would have dropped most of this; repo cap is 30k.
     expect(out.length).toBeGreaterThan(15000);
+  });
+});
+
+describe("buildDiagramPrompt", () => {
+  it("FLOWCHART pins flowchart TD and forbids fences/prose", () => {
+    const { system, user } = buildDiagramPrompt("FLOWCHART", "const x = 1;");
+    expect(system).toContain("flowchart TD");
+    expect(system).toMatch(/ONLY the raw Mermaid/i);
+    expect(user).toContain("const x = 1;");
+  });
+
+  it("SEQUENCE pins sequenceDiagram with participants", () => {
+    const { system } = buildDiagramPrompt("SEQUENCE", "x");
+    expect(system).toContain("sequenceDiagram");
+    expect(system).toMatch(/participant/i);
+  });
+
+  it("DATAFLOW pins flowchart LR", () => {
+    const { system } = buildDiagramPrompt("DATAFLOW", "x");
+    expect(system).toContain("flowchart LR");
+  });
+
+  it("repo mode asks for an architecture-level diagram and uses a larger budget", () => {
+    const big = "// FILE: a\n" + "y".repeat(20000);
+    const { user } = buildDiagramPrompt("FLOWCHART", big, true);
+    expect(user).toMatch(/architecture/i);
+    expect(user.length).toBeGreaterThan(15000);
   });
 });

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   BookOpen,
   Target,
@@ -28,7 +28,10 @@ interface Props {
   stream: DocumentStreamState;
   code: string;
   isRepo?: boolean;
+  privacyMode?: boolean;
 }
+
+type RegenType = "FLOWCHART" | "SEQUENCE" | "DATAFLOW";
 
 const SECTION_ORDER: DocumentSection[] = [
   "TITLE",
@@ -82,8 +85,35 @@ function stripFence(text: string): string {
     .trim();
 }
 
-export function DocumentPanel({ stream, code, isRepo = false }: Props) {
+export function DocumentPanel({ stream, code, isRepo = false, privacyMode = false }: Props) {
   const { sections, currentSection, confidence, done, error, result } = stream;
+
+  const [overrides, setOverrides] = useState<Partial<Record<RegenType, string>>>({});
+  const [regenning, setRegenning] = useState<RegenType | null>(null);
+
+  // Regeneration is only possible when we still hold the original source
+  // (live paste sessions) — not for repo or shared/reopened read-only views.
+  const canRegenerate = done && !!code && !isRepo;
+
+  const regenerate = async (type: RegenType) => {
+    if (!canRegenerate || regenning) return;
+    setRegenning(type);
+    try {
+      const res = await fetch("/api/document/diagram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, diagramType: type, privacyMode, isRepo: false }),
+      });
+      const data = await res.json();
+      if (res.ok && data.diagram) {
+        setOverrides((o) => ({ ...o, [type]: data.diagram }));
+      }
+    } catch {
+      // leave the existing diagram in place on failure
+    } finally {
+      setRegenning(null);
+    }
+  };
 
   const apiEntries = useMemo<ApiEntry[]>(() => {
     if (result?.apiEntries) return result.apiEntries;
@@ -116,25 +146,34 @@ export function DocumentPanel({ stream, code, isRepo = false }: Props) {
 
   const detectedLanguage = result?.detectedLanguage ?? "";
 
+  // A regenerated diagram (override) wins over the originally streamed one.
+  const flowchartSrc = overrides.FLOWCHART ?? sections.FLOWCHART;
+  const sequenceSrc = overrides.SEQUENCE ?? sections.SEQUENCE;
+  const dataflowSrc = overrides.DATAFLOW ?? sections.DATAFLOW;
+
   const exportData: DocumentExportData = {
     title,
     overview: sections.OVERVIEW,
     purpose: sections.PURPOSE,
     apiEntries,
     steps: sections.STEPS,
-    flowchart: sections.FLOWCHART,
-    sequenceDiagram: sections.SEQUENCE,
-    dataflow: sections.DATAFLOW,
+    flowchart: flowchartSrc,
+    sequenceDiagram: sequenceSrc,
+    dataflow: dataflowSrc,
     example,
     edgeCases: sections.EDGECASES,
     complexity: sections.COMPLEXITY,
     detectedLanguage,
   };
 
-  const showFlowchart = isSectionComplete("FLOWCHART", stream) && sections.FLOWCHART.trim();
-  const showSequence = isSectionComplete("SEQUENCE", stream) && sections.SEQUENCE.trim();
-  const showDataflow = isSectionComplete("DATAFLOW", stream) && sections.DATAFLOW.trim();
+  const showFlowchart = isSectionComplete("FLOWCHART", stream) && flowchartSrc.trim();
+  const showSequence = isSectionComplete("SEQUENCE", stream) && sequenceSrc.trim();
+  const showDataflow = isSectionComplete("DATAFLOW", stream) && dataflowSrc.trim();
   const showAnnotated = !isRepo && isSectionComplete("ANNOTATIONS", stream) && annotations.length > 0;
+
+  const shareResult: DocumentResult | null = result
+    ? { ...result, flowchart: flowchartSrc, sequenceDiagram: sequenceSrc, dataflow: dataflowSrc }
+    : null;
 
   return (
     <div className="space-y-3">
@@ -152,7 +191,7 @@ export function DocumentPanel({ stream, code, isRepo = false }: Props) {
         {done && confidence !== undefined && <ConfidenceScore score={confidence} />}
       </div>
 
-      {done && <DocActionsBar data={exportData} code={code} isRepo={isRepo} result={result ?? null} />}
+      {done && <DocActionsBar data={exportData} code={code} isRepo={isRepo} result={shareResult} />}
 
       <SectionCard
         title="Overview"
@@ -182,25 +221,31 @@ export function DocumentPanel({ stream, code, isRepo = false }: Props) {
 
       {showFlowchart && (
         <FlowDiagram
-          diagram={sections.FLOWCHART}
+          diagram={flowchartSrc}
           title="Control Flow"
           downloadName="control-flow.svg"
+          onRegenerate={canRegenerate ? () => regenerate("FLOWCHART") : undefined}
+          regenerating={regenning === "FLOWCHART"}
         />
       )}
 
       {showSequence && (
         <FlowDiagram
-          diagram={sections.SEQUENCE}
+          diagram={sequenceSrc}
           title="Sequence Diagram"
           downloadName="sequence.svg"
+          onRegenerate={canRegenerate ? () => regenerate("SEQUENCE") : undefined}
+          regenerating={regenning === "SEQUENCE"}
         />
       )}
 
       {showDataflow && (
         <FlowDiagram
-          diagram={sections.DATAFLOW}
+          diagram={dataflowSrc}
           title="Data Flow"
           downloadName="data-flow.svg"
+          onRegenerate={canRegenerate ? () => regenerate("DATAFLOW") : undefined}
+          regenerating={regenning === "DATAFLOW"}
         />
       )}
 

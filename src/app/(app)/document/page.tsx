@@ -337,6 +337,7 @@ export default function DocumentPage() {
               stream={state}
               code={sourceMode === "repo" ? "" : code}
               isRepo={isRepoResult}
+              privacyMode={privacyMode}
             />
           )}
         </div>
