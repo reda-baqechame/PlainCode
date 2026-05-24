@@ -8,17 +8,47 @@ Free. No sign-up required.
 
 ## What It Does
 
-PlainCode has three modes:
+PlainCode has these modes:
 
 | Mode | What it does |
 |------|-------------|
 | **Explain** | Paste code, pick your audience, get a structured plain-English explanation |
+| **Document** | Paste a snippet or point at a repo — get README-ready docs with three diagrams, an API reference, and one-click export |
 | **Diff** | Compare two versions of code and understand what changed and why |
 | **Defend** | Point at a GitHub repo — get grilled with 5 adversarial questions, scored 0–100 per answer |
+| **Ship Check** | Run automated checks + a systems stress test on a repo and get a Ship Score |
 
 ---
 
 ## Features
+
+### Document Mode *(new)*
+
+Turn any code into polished, README-ready documentation. Paste a snippet **or** point at a whole public GitHub repository.
+
+**What you get:**
+- **Overview & Purpose** — plain-English summary of what the code does and why it exists
+- **API Reference** — auto-extracted signatures with typed parameters, return types, and thrown errors
+- **Three visual diagrams** — each showing the code from a different angle, downloadable as SVG and individually regenerable:
+  - **Control Flow** (Mermaid `flowchart TD`) — decisions, branches, loops
+  - **Sequence** (Mermaid `sequenceDiagram`) — who calls whom across functions and services
+  - **Data Flow** (Mermaid `flowchart LR`) — inputs → transformations → outputs
+- **Usage Example**, **Edge Cases & Gotchas**, and **Complexity & Performance**
+- **Inline annotated source** — hover any block to read what it does
+- **Follow-up Q&A** grounded in the generated documentation
+
+**Whole-repo mode** documents an entire project (architecture-level diagrams, the public API surface annotated with file paths) using the same repo fetcher as Defend.
+
+**Export & persistence:**
+- **Copy as Markdown** (diagrams embedded as ```` ```mermaid ```` blocks) · **Download `.md`**
+- **Copy as Docstrings** (JSDoc / Python / generic) · **Copy Source + Docstrings** (injected into your code)
+- **Share Link** — a self-contained URL that rehydrates the full document
+- **Recent documents** — last 5 kept locally so you can reopen them instantly
+- **Open docs PR** — commit the docs straight back to your repo as a pull request (GitHub OAuth, or a fine-grained token)
+
+Fully stateless on the server; history and shares live in your browser.
+
+---
 
 ### Defend Mode *(new)*
 
@@ -186,9 +216,16 @@ Edit `.env.local`:
 # Required — get yours at console.anthropic.com
 ANTHROPIC_API_KEY=sk-ant-...
 
-# Optional — increases GitHub API rate limit for Defend Mode
+# Optional — increases GitHub API rate limit for Defend / Document repo fetches
 # A read-only personal access token is sufficient
 GITHUB_TOKEN=ghp_...
+
+# Optional — enables "Open docs PR" via GitHub OAuth in Document mode.
+# Register an OAuth App (https://github.com/settings/developers) with callback
+# <your-origin>/api/github/callback. Without these, users can still open a docs
+# PR by pasting a fine-grained token (Contents + Pull requests: write).
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
 ```
 
 ```bash
@@ -215,14 +252,30 @@ The app uses Next.js standalone output mode for containerized deployments (Railw
 |--------|------|-------------|
 | `POST` | `/api/explain` | Explain a code snippet (SSE stream) |
 | `POST` | `/api/explain-diff` | Explain changes between two code versions (SSE stream) |
+| `POST` | `/api/document` | Generate full documentation — 12 sections incl. 3 diagrams (SSE stream) |
+| `POST` | `/api/document/diagram` | Regenerate a single diagram (`FLOWCHART` / `SEQUENCE` / `DATAFLOW`) |
+| `POST` | `/api/document/commit` | Open a PR that writes the generated docs into a repo |
 | `POST` | `/api/qa` | Ask a follow-up question (SSE stream) |
 | `POST` | `/api/fetch-repo` | Fetch source files from a public GitHub repo |
 | `POST` | `/api/defend` | Generate 5 adversarial questions for a codebase |
 | `POST` | `/api/defend-score` | Score a single answer 0–100 with feedback |
 | `POST` | `/api/defend-summary` | Generate Defense Score + weak-spot summary |
+| `GET`  | `/api/github/status` | Whether GitHub OAuth is configured and the caller is connected |
+| `GET`  | `/api/github/auth` | Begin the GitHub OAuth flow (for "Open docs PR") |
+| `GET`  | `/api/github/callback` | OAuth callback — exchanges the code for a token |
+| `POST` | `/api/github/logout` | Clear the stored GitHub token |
 | `GET`  | `/api/health` | Health check |
 
-All streaming endpoints return Server-Sent Events with JSON payloads. Defend Mode endpoints return standard JSON.
+All streaming endpoints return Server-Sent Events with JSON payloads; the rest return standard JSON. All LLM/external-cost endpoints are rate-limited per IP.
+
+---
+
+## Testing
+
+```bash
+npm test          # run the Vitest suite once
+npm run test:watch
+```
 
 ---
 
