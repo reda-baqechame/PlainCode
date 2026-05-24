@@ -14,6 +14,7 @@ import {
   Layers,
   Database,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { DemoShipCheck } from "@/components/DemoShipCheck";
@@ -35,6 +36,22 @@ const tools = [
     ],
     cta: "Try Explain",
     ctaClass: "bg-blue-500 hover:bg-blue-600 text-white",
+  },
+  {
+    icon: <FileText className="h-6 w-6 text-indigo-500" />,
+    accent: "border-indigo-500",
+    name: "Document",
+    badge: "README-ready",
+    badgeColor: "bg-indigo-500/10 text-indigo-500",
+    href: "/document",
+    what: "Paste code and get auto-generated documentation: a plain-English explanation, an API reference, three visual diagrams (control flow, sequence, data flow), a usage example, and inline annotations — exportable as Markdown.",
+    steps: [
+      "Paste any code snippet — function, module, or class",
+      "Wait while the doc streams in with three diagrams and an API table",
+      "Copy as Markdown straight into your README, or copy as docstrings",
+    ],
+    cta: "Try Document",
+    ctaClass: "bg-indigo-500 hover:bg-indigo-600 text-white",
   },
   {
     icon: <GitCompare className="h-6 w-6 text-green-500" />,
@@ -159,6 +176,9 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <Link href="/explain" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Explain
+            </Link>
+            <Link href="/document" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Document
             </Link>
             <Link href="/vibe-check" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Ship Check

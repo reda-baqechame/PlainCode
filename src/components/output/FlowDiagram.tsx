@@ -18,14 +18,19 @@ function stripCodeFences(raw: string): string {
 function sanitizeMermaid(raw: string): string {
   let cleaned = stripCodeFences(raw);
 
-  // Ensure it starts with a valid diagram type
-  if (!/^(flowchart|graph)\s/i.test(cleaned)) {
+  // Ensure it starts with a valid diagram type. If not, default to flowchart TD.
+  const supportedPrefix = /^(flowchart|graph|sequenceDiagram|stateDiagram(?:-v2)?|classDiagram|erDiagram|journey|gantt)\b/i;
+  if (!supportedPrefix.test(cleaned)) {
     cleaned = `flowchart TD\n${cleaned}`;
   }
 
+  // The node-label-quoting regex below is specific to flowchart/graph syntax and
+  // would mangle sequence-message syntax like "A->>B: do thing". Skip for non-flow diagrams.
+  const isFlow = /^(flowchart|graph)\b/i.test(cleaned);
+  if (!isFlow) return cleaned;
+
   // Quote node labels that contain special characters Mermaid can't parse.
   // Matches node definitions like:  A[label] A(label) A{label} A((label))
-  // and wraps the inner label in quotes if it has problematic chars.
   cleaned = cleaned.replace(
     /(\w+)(\[|\(+|\{+)(.*?)(\]|\)+|\}+)/g,
     (_match, id, open, label, close) => {
