@@ -11,6 +11,10 @@ describe("stripCodeFences", () => {
   it("leaves unfenced text untouched", () => {
     expect(stripCodeFences("flowchart TD")).toBe("flowchart TD");
   });
+  it("extracts a fenced block embedded in surrounding prose", () => {
+    const raw = "Here is the diagram:\n\n```mermaid\nflowchart TD\n A-->B\n```\n\nHope that helps!";
+    expect(stripCodeFences(raw)).toBe("flowchart TD\n A-->B");
+  });
 });
 
 describe("sanitizeMermaid — flowchart", () => {
@@ -27,6 +31,27 @@ describe("sanitizeMermaid — flowchart", () => {
     expect(sanitizeMermaid("flowchart TD\n A[Process & retry] --> B[Done]")).toContain(
       'A["Process & retry"]'
     );
+  });
+  it("quotes a label containing parentheses WITHOUT mismatching brackets", () => {
+    // Regression: the old combined regex closed on ")" before "]", producing
+    // A["foo (bar")] — broken. The fixed per-shape regex must keep [ ] intact.
+    const out = sanitizeMermaid("flowchart TD\n A[call fetch(userId)] --> B[done]");
+    expect(out).toContain('A["call fetch(userId)"]');
+    expect(out).not.toMatch(/"\)\]/); // no stray ") ]" corruption
+  });
+  it("quotes a decision label with parentheses", () => {
+    expect(sanitizeMermaid("flowchart TD\n C{valid(x)?} --> D[ok]")).toContain('C{"valid(x)?"}');
+  });
+  it("leaves already-quoted labels untouched", () => {
+    const src = 'flowchart TD\n A["already (quoted)"] --> B["B"]';
+    expect(sanitizeMermaid(src)).toContain('A["already (quoted)"]');
+    expect(sanitizeMermaid(src)).not.toContain('A[""');
+  });
+  it("leaves a plain label without special chars unquoted", () => {
+    expect(sanitizeMermaid("flowchart TD\n A[Start] --> B[End]")).toContain("A[Start]");
+  });
+  it("strips a stray leading 'mermaid' word", () => {
+    expect(sanitizeMermaid("mermaid\nflowchart TD\n A-->B")).toMatch(/^flowchart TD/);
   });
 });
 
