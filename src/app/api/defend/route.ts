@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAnthropicClient } from "@/lib/ai/client";
 import { generateArchitectureDiagram } from "@/lib/ai/architecture-diagram";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   repoCode: z.string().min(100).max(35_000),
@@ -202,6 +203,9 @@ Only include improvements for questions that are too generic. If all are specifi
 }
 
 export async function POST(req: NextRequest) {
+  const limited = enforceRateLimit(req, "defend", 15);
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {

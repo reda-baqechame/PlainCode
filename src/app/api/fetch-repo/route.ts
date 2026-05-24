@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   repoUrl: z.string().url(),
@@ -78,6 +79,9 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = enforceRateLimit(req, "fetch-repo", 20);
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {

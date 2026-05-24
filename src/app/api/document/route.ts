@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { encodePipelineStream } from "@/lib/ai/pipeline";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   code: z.string().min(1).max(50000),
@@ -10,6 +11,9 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const limited = enforceRateLimit(req, "document", 20);
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
