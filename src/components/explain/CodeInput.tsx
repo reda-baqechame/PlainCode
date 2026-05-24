@@ -5,6 +5,12 @@ import { Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { CODE_FILE_EXTENSIONS } from "@/constants/supported-languages";
 
+function languageFromFilename(name: string): string | undefined {
+  const dot = name.lastIndexOf(".");
+  if (dot === -1) return undefined;
+  return CODE_FILE_EXTENSIONS[name.slice(dot).toLowerCase()];
+}
+
 // Lazy load CodeMirror to avoid SSR issues and large initial bundle
 const CodeMirrorEditor = dynamic(() => import("./CodeMirrorEditor"), {
   ssr: false,
@@ -25,9 +31,11 @@ interface Props {
 
 export function CodeInput({ value, onChange, placeholder = "Paste your code here...", label, maxLength = 50000 }: Props) {
   const [isDragging, setIsDragging] = useState(false);
+  const [language, setLanguage] = useState<string | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback((file: File) => {
+    setLanguage(languageFromFilename(file.name));
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
@@ -60,11 +68,11 @@ export function CodeInput({ value, onChange, placeholder = "Paste your code here
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
       >
-        <CodeMirrorEditor value={value} onChange={onChange} placeholder={placeholder} />
+        <CodeMirrorEditor value={value} onChange={onChange} placeholder={placeholder} language={language} />
 
         {value && (
           <button
-            onClick={() => onChange("")}
+            onClick={() => { onChange(""); setLanguage(undefined); }}
             className="absolute top-2 right-2 p-1 rounded hover:bg-accent transition-colors z-10"
             aria-label="Clear code"
           >
