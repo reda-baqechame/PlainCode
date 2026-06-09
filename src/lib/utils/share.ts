@@ -1,4 +1,5 @@
 import type { CheckResult } from "@/app/api/vibe-check/route";
+import type { DocumentResult } from "@/types/explanation";
 
 export interface ShipShareData {
   repoUrl: string;
@@ -48,4 +49,32 @@ export function decodeDefendShare(encoded: string): DefendShareData | null {
 
 export function buildShareUrl(base: string, encoded: string): string {
   return `${base}?r=${encoded}`;
+}
+
+export interface DocumentShareData {
+  result: DocumentResult;
+  isRepo: boolean;
+}
+
+export function encodeDocumentShare(data: DocumentShareData): string {
+  try {
+    return btoa(encodeURIComponent(JSON.stringify(data)));
+  } catch {
+    return "";
+  }
+}
+
+export function decodeDocumentShare(encoded: string): DocumentShareData | null {
+  try {
+    return JSON.parse(decodeURIComponent(atob(encoded))) as DocumentShareData;
+  } catch {
+    return null;
+  }
+}
+
+// Document share payloads are large (three diagrams + prose + API), so they
+// ride in the URL hash fragment, which is not subject to server / proxy URL
+// length limits the way a query string is.
+export function buildDocumentShareUrl(origin: string, encoded: string): string {
+  return `${origin}/document#d=${encoded}`;
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { streamQAAnswer } from "@/lib/ai/qa";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   code: z.string().max(6000).default(""),
@@ -14,6 +15,9 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const limited = enforceRateLimit(req, "qa", 40);
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {

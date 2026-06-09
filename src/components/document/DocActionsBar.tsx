@@ -1,20 +1,27 @@
 "use client";
 import { useState } from "react";
-import { Copy, Check, Download, FileCode2 } from "lucide-react";
+import { Copy, Check, Download, FileCode2, FilePlus2, Link2 } from "lucide-react";
 import {
   exportDocumentMarkdown,
   exportDocstrings,
+  injectDocstrings,
   type DocumentExportData,
 } from "@/lib/utils/export-markdown";
+import { encodeDocumentShare, buildDocumentShareUrl } from "@/lib/utils/share";
+import type { DocumentResult } from "@/types/explanation";
 
 interface Props {
   data: DocumentExportData;
+  code: string;
+  isRepo?: boolean;
+  result?: DocumentResult | null;
 }
 
-type ActionKey = "markdown" | "download" | "docstrings";
+type ActionKey = "markdown" | "download" | "docstrings" | "inject" | "share";
 
-export function DocActionsBar({ data }: Props) {
+export function DocActionsBar({ data, code, isRepo = false, result = null }: Props) {
   const [confirmed, setConfirmed] = useState<ActionKey | null>(null);
+  const [injectNote, setInjectNote] = useState<string | null>(null);
 
   const flash = (key: ActionKey) => {
     setConfirmed(key);
@@ -51,7 +58,36 @@ export function DocActionsBar({ data }: Props) {
     flash("docstrings");
   };
 
+  const copyInjected = async () => {
+    const result = injectDocstrings(code, data.apiEntries, data.detectedLanguage);
+    if (result.injected === 0) {
+      setInjectNote("No definitions matched");
+      setTimeout(() => setInjectNote(null), 2500);
+      return;
+    }
+    await navigator.clipboard.writeText(result.code);
+    setInjectNote(
+      `Injected ${result.injected}${result.skipped.length ? ` · ${result.skipped.length} skipped` : ""}`
+    );
+    flash("inject");
+    setTimeout(() => setInjectNote(null), 2500);
+  };
+
   const hasApi = data.apiEntries.length > 0;
+  const canInject = hasApi && !isRepo && !!code;
+
+  const copyShareLink = async () => {
+    if (!result) return;
+    const encoded = encodeDocumentShare({ result, isRepo });
+    if (!encoded) {
+      setInjectNote("Could not build share link");
+      setTimeout(() => setInjectNote(null), 2500);
+      return;
+    }
+    const url = buildDocumentShareUrl(window.location.origin, encoded);
+    await navigator.clipboard.writeText(url);
+    flash("share");
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2">
@@ -101,6 +137,46 @@ export function DocActionsBar({ data }: Props) {
           </>
         )}
       </button>
+
+      {!isRepo && code && (
+      <button
+        onClick={copyInjected}
+        disabled={!canInject}
+        title={canInject ? "Copy your source with doc-comments inserted above each definition" : "No API entries detected to inject"}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {confirmed === "inject" ? (
+          <>
+            <Check className="h-3.5 w-3.5 text-emerald-500" /> Copied
+          </>
+        ) : (
+          <>
+            <FilePlus2 className="h-3.5 w-3.5" /> Copy Source + Docstrings
+          </>
+        )}
+      </button>
+      )}
+
+      <button
+        onClick={copyShareLink}
+        disabled={!result}
+        title={result ? "Copy a shareable link to this documentation" : ""}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {confirmed === "share" ? (
+          <>
+            <Check className="h-3.5 w-3.5 text-emerald-500" /> Link copied
+          </>
+        ) : (
+          <>
+            <Link2 className="h-3.5 w-3.5" /> Share Link
+          </>
+        )}
+      </button>
+
+      {injectNote && (
+        <span className="text-xs text-muted-foreground self-center">{injectNote}</span>
+      )}
     </div>
   );
 }

@@ -1,48 +1,14 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { GitBranch, Download } from "lucide-react";
+import { GitBranch, Download, RefreshCw } from "lucide-react";
+import { sanitizeMermaid } from "@/lib/utils/mermaid";
 
 interface Props {
   diagram: string;
   title?: string;
   downloadName?: string;
-}
-
-function stripCodeFences(raw: string): string {
-  return raw
-    .replace(/^```(?:mermaid)?\s*\n?/i, "")
-    .replace(/\n?```\s*$/i, "")
-    .trim();
-}
-
-function sanitizeMermaid(raw: string): string {
-  let cleaned = stripCodeFences(raw);
-
-  // Ensure it starts with a valid diagram type. If not, default to flowchart TD.
-  const supportedPrefix = /^(flowchart|graph|sequenceDiagram|stateDiagram(?:-v2)?|classDiagram|erDiagram|journey|gantt)\b/i;
-  if (!supportedPrefix.test(cleaned)) {
-    cleaned = `flowchart TD\n${cleaned}`;
-  }
-
-  // The node-label-quoting regex below is specific to flowchart/graph syntax and
-  // would mangle sequence-message syntax like "A->>B: do thing". Skip for non-flow diagrams.
-  const isFlow = /^(flowchart|graph)\b/i.test(cleaned);
-  if (!isFlow) return cleaned;
-
-  // Quote node labels that contain special characters Mermaid can't parse.
-  // Matches node definitions like:  A[label] A(label) A{label} A((label))
-  cleaned = cleaned.replace(
-    /(\w+)(\[|\(+|\{+)(.*?)(\]|\)+|\}+)/g,
-    (_match, id, open, label, close) => {
-      if (/[→←↔<>&"()[\]{}|#]/.test(label) && !label.startsWith('"')) {
-        const escaped = label.replace(/"/g, "'");
-        return `${id}${open}"${escaped}"${close}`;
-      }
-      return `${id}${open}${label}${close}`;
-    }
-  );
-
-  return cleaned;
+  onRegenerate?: () => void;
+  regenerating?: boolean;
 }
 
 /**
@@ -67,13 +33,22 @@ function cleanupMermaidErrors() {
   });
 }
 
-export function FlowDiagram({ diagram, title = "Flow Diagram", downloadName = "flow-diagram.svg" }: Props) {
+export function FlowDiagram({
+  diagram,
+  title = "Flow Diagram",
+  downloadName = "flow-diagram.svg",
+  onRegenerate,
+  regenerating = false,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState(false);
   const [svg, setSvg] = useState("");
 
   useEffect(() => {
     if (!diagram || diagram === "none") return;
+    // Reset stale state when the diagram source changes (e.g. after regenerate).
+    setError(false);
+    setSvg("");
 
     let cancelled = false;
 
@@ -152,7 +127,21 @@ export function FlowDiagram({ diagram, title = "Flow Diagram", downloadName = "f
   };
 
   if (!diagram || diagram === "none") return null;
-  if (error) return null;
+  // When a diagram fails to parse, hide it entirely — unless the caller offers
+  // a regenerate action, in which case show a recovery card so the user can retry.
+  if (error && !onRegenerate) return null;
+
+  const RegenButton = onRegenerate ? (
+    <button
+      onClick={onRegenerate}
+      disabled={regenerating}
+      className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+      aria-label="Regenerate diagram"
+      title="Regenerate this diagram"
+    >
+      <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? "animate-spin" : ""}`} />
+    </button>
+  ) : null;
 
   return (
     <div className="rounded-lg border border-border bg-card p-4 space-y-2 section-fade-in">
@@ -161,20 +150,31 @@ export function FlowDiagram({ diagram, title = "Flow Diagram", downloadName = "f
           <GitBranch className="h-4 w-4 text-primary" />
           {title}
         </div>
-        {svg && (
-          <button
-            onClick={downloadSvg}
-            className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-            aria-label="Download SVG"
-          >
-            <Download className="h-3.5 w-3.5" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {RegenButton}
+          {svg && (
+            <button
+              onClick={downloadSvg}
+              className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Download SVG"
+            >
+              <Download className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
-      {svg ? (
+      {error ? (
+        <div className="h-16 flex items-center justify-center">
+          <span className="text-muted-foreground text-sm">
+            Diagram could not be rendered. {onRegenerate ? "Try regenerating it." : ""}
+          </span>
+        </div>
+      ) : svg ? (
         <div
           ref={containerRef}
           className="overflow-auto"
+          role="img"
+          aria-label={title}
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       ) : (

@@ -246,6 +246,143 @@ export function exportDocstrings(entries: ApiEntry[], detectedLanguage: string):
     .join("\n\n");
 }
 
+/* ── Docstring injection into original source ──────────────────────────── */
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function leadingWhitespace(line: string): string {
+  return line.match(/^[ \t]*/)?.[0] ?? "";
+}
+
+function indentBlock(block: string, indent: string): string {
+  return block
+    .split("\n")
+    .map((l) => (l.length > 0 ? indent + l : l))
+    .join("\n");
+}
+
+function findDefLineJsLike(lines: string[], name: string): number {
+  const n = escapeRegExp(name);
+  const patterns = [
+    new RegExp(`\\b(?:export\\s+)?(?:default\\s+)?(?:async\\s+)?function\\*?\\s+${n}\\b`),
+    new RegExp(`\\b(?:export\\s+)?(?:abstract\\s+)?class\\s+${n}\\b`),
+    new RegExp(`\\b(?:export\\s+)?(?:const|let|var)\\s+${n}\\s*=`),
+    new RegExp(`\\b${n}\\s*\\([^)]*\\)\\s*[:{]`), // method definition
+    new RegExp(`\\b${n}\\s*[:=]\\s*(?:async\\s*)?\\(`), // arrow property
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    if (patterns.some((p) => p.test(lines[i]))) return i;
+  }
+  return -1;
+}
+
+function findDefLinePython(lines: string[], name: string): number {
+  const p = new RegExp(`^\\s*(?:async\\s+)?(?:def|class)\\s+${escapeRegExp(name)}\\b`);
+  for (let i = 0; i < lines.length; i++) {
+    if (p.test(lines[i])) return i;
+  }
+  return -1;
+}
+
+// Python signatures can span multiple lines; the body starts after the line
+// whose code (stripped of trailing comment) ends with a colon.
+function findPythonSignatureEnd(lines: string[], defLine: number): number {
+  for (let i = defLine; i < lines.length; i++) {
+    const code = lines[i].replace(/#.*$/, "").trimEnd();
+    if (code.endsWith(":")) return i;
+  }
+  return defLine;
+}
+
+function buildPythonDocstringFlat(entry: ApiEntry): string {
+  const out: string[] = [`"""${entry.description}`];
+  if (entry.params.length > 0) {
+    out.push("", "Args:");
+    for (const p of entry.params) out.push(`    ${p.name} (${p.type}): ${p.description}`);
+  }
+  if (entry.returns && entry.returns.type) {
+    out.push("", "Returns:", `    ${entry.returns.type}: ${entry.returns.description}`);
+  }
+  if (entry.throws.length > 0) {
+    out.push("", "Raises:");
+    for (const t of entry.throws) out.push(`    ${t.type}: ${t.description}`);
+  }
+  out.push(`"""`);
+  return out.join("\n");
+}
+
+export interface InjectResult {
+  code: string;
+  injected: number;
+  skipped: string[];
+}
+
+/**
+ * Inserts generated doc-comments into the original source at each function /
+ * class definition. Best-effort: entries whose definition can't be located are
+ * left untouched and reported in `skipped`. Never throws — returns the original
+ * code unchanged if nothing matches.
+ */
+export function injectDocstrings(
+  code: string,
+  entries: ApiEntry[],
+  detectedLanguage: string
+): InjectResult {
+  if (!code || entries.length === 0) {
+    return { code, injected: 0, skipped: entries.map((e) => e.name) };
+  }
+
+  const lang = detectedLanguage.toLowerCase();
+  const isPython = /python|py/.test(lang);
+  const isJsTs = /(javascript|typescript|jsx|tsx|node|js|ts)/.test(lang);
+
+  const lines = code.split("\n");
+
+  // Resolve each entry to an insertion plan first, then apply bottom-up so
+  // earlier line indices stay valid as we splice.
+  interface Plan {
+    insertAt: number; // index to splice the block before
+    block: string;
+    name: string;
+  }
+  const plans: Plan[] = [];
+  const skipped: string[] = [];
+
+  for (const entry of entries) {
+    if (isPython) {
+      const defLine = findDefLinePython(lines, entry.name);
+      if (defLine === -1) {
+        skipped.push(entry.name);
+        continue;
+      }
+      const sigEnd = findPythonSignatureEnd(lines, defLine);
+      const bodyIndent = leadingWhitespace(lines[defLine]) + "    ";
+      const block = indentBlock(buildPythonDocstringFlat(entry), bodyIndent);
+      plans.push({ insertAt: sigEnd + 1, block, name: entry.name });
+    } else {
+      const defLine = findDefLineJsLike(lines, entry.name);
+      if (defLine === -1) {
+        skipped.push(entry.name);
+        continue;
+      }
+      const indent = leadingWhitespace(lines[defLine]);
+      const rawBlock = isJsTs ? buildJsDocBlock(entry) : buildGenericBlock(entry);
+      const block = indentBlock(rawBlock, indent);
+      plans.push({ insertAt: defLine, block, name: entry.name });
+    }
+  }
+
+  // Apply bottom-up to preserve indices.
+  plans.sort((a, b) => b.insertAt - a.insertAt);
+  for (const plan of plans) {
+    lines.splice(plan.insertAt, 0, plan.block);
+  }
+
+  return { code: lines.join("\n"), injected: plans.length, skipped };
+}
+
 export function exportDefendMarkdown(data: DefendExportData): string {
   const { repoUrl, defenseScore, builderType, assessment, weakSpots, answered } = data;
   const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });

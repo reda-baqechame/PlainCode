@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getAnthropicClient } from "@/lib/ai/client";
 import { generateArchitectureDiagram } from "@/lib/ai/architecture-diagram";
 import { generateAssessment } from "@/lib/ai/generate-assessment";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { generateSystemsAnalysis, type SystemsAnalysis } from "@/lib/ai/generate-systems-analysis";
 export type { SystemsAnalysis };
 
@@ -308,6 +309,9 @@ const POINTS: Record<string, number> = {
 };
 
 export async function POST(req: NextRequest) {
+  const limited = enforceRateLimit(req, "vibe-check", 10);
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {

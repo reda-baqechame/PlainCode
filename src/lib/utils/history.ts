@@ -1,5 +1,8 @@
+import type { DocumentResult } from "@/types/explanation";
+
 const SHIP_KEY = "plaincode_ship_history";
 const DEFEND_KEY = "plaincode_defend_history";
+const DOCUMENT_KEY = "plaincode_document_history";
 const MAX = 5;
 
 export interface ShipHistoryEntry {
@@ -54,4 +57,36 @@ export function saveDefendHistory(entry: DefendHistoryEntry): void {
 
 export function getDefendHistory(): DefendHistoryEntry[] {
   return readList<DefendHistoryEntry>(DEFEND_KEY);
+}
+
+export interface DocumentHistoryEntry {
+  id: string;
+  title: string;
+  detectedLanguage: string;
+  isRepo: boolean;
+  date: string;
+  code: string;
+  result: DocumentResult;
+}
+
+// Dedup key: the original source for snippets, the title for repos.
+function documentDedupKey(entry: DocumentHistoryEntry): string {
+  return entry.isRepo ? `repo:${entry.title}` : `code:${entry.code}`;
+}
+
+export function saveDocumentHistory(entry: DocumentHistoryEntry): void {
+  const key = documentDedupKey(entry);
+  const list = readList<DocumentHistoryEntry>(DOCUMENT_KEY).filter(
+    (e) => documentDedupKey(e) !== key
+  );
+  writeList(DOCUMENT_KEY, [entry, ...list]);
+}
+
+export function getDocumentHistory(): DocumentHistoryEntry[] {
+  return readList<DocumentHistoryEntry>(DOCUMENT_KEY);
+}
+
+export function deleteDocumentHistory(id: string): void {
+  const list = readList<DocumentHistoryEntry>(DOCUMENT_KEY).filter((e) => e.id !== id);
+  writeList(DOCUMENT_KEY, list);
 }
