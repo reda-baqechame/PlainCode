@@ -1,22 +1,32 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "PlainCode — Explain Any Code in Plain English",
+  title: "PlainCode — From idea to shipped system",
   description:
-    "Paste any code snippet and get a clear, accurate plain English explanation tailored to your technical level. Free for everyone.",
+    "PlainCode is the spec-driven workspace for building with AI: turn a vague idea into a build-ready Blueprint, then understand, harden, and ship the code your AI agent writes. Free, no sign-up.",
   openGraph: {
-    title: "PlainCode",
-    description: "Explain any code in plain English. Free for everyone.",
+    title: "PlainCode — From idea to shipped system",
+    description:
+      "Turn a vague idea into a build-ready Blueprint for Codex, Claude, ChatGPT, or Cursor — then understand, defend, and ship what you build. Free, no sign-up.",
     type: "website",
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fcfcfd" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0f" },
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}

@@ -1,298 +1,249 @@
 import Link from "next/link";
 import {
-  Code2,
-  Sparkles,
-  BookOpen,
-  GitCompare,
-  GitBranch,
-  Lock,
-  Shield,
-  ChevronRight,
-  Zap,
   ArrowRight,
-  Network,
+  ChevronRight,
   Layers,
-  Database,
+  Network,
+  Lock,
+  ShieldCheck,
+  Sparkles,
+  Wand2,
+  GitCompare,
   AlertTriangle,
-  FileText,
 } from "lucide-react";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import { DemoShipCheck } from "@/components/DemoShipCheck";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { STAGES, TOOLS, toolsByStage, BUILD_STAGE_ICON, type StageId } from "@/constants/tools";
 
-/* ─── Tool cards ─────────────────────────────────────────────────────────── */
-const tools = [
+/* ── Pipeline (how the AI works) ─────────────────────────────────────────── */
+const pipeline = [
   {
-    icon: <Sparkles className="h-6 w-6 text-blue-500" />,
-    accent: "border-blue-500",
-    name: "Explain",
-    badge: "Start here",
-    badgeColor: "bg-blue-500/10 text-blue-500",
-    href: "/explain",
-    what: "Paste any code snippet and understand it as part of a system — what it does, what it depends on, and what breaks if it fails. Five audience levels, from ELI5 to Developer Peer.",
-    steps: [
-      "Paste your code snippet into the editor",
-      "Pick your audience — ELI5 up to Developer Peer",
-      "Get a full explanation including where this fits in a system",
-    ],
-    cta: "Try Explain",
-    ctaClass: "bg-blue-500 hover:bg-blue-600 text-white",
+    step: "1",
+    title: "Intent Analysis",
+    model: "Claude Haiku",
+    desc: "Reads your input first to understand what it is, what's clear, and what's missing. This context grounds everything that follows and prevents hallucinations.",
   },
   {
-    icon: <FileText className="h-6 w-6 text-indigo-500" />,
-    accent: "border-indigo-500",
-    name: "Document",
-    badge: "README-ready",
-    badgeColor: "bg-indigo-500/10 text-indigo-500",
-    href: "/document",
-    what: "Paste code and get auto-generated documentation: a plain-English explanation, an API reference, three visual diagrams (control flow, sequence, data flow), a usage example, and inline annotations — exportable as Markdown.",
-    steps: [
-      "Paste any code snippet — function, module, or class",
-      "Wait while the doc streams in with three diagrams and an API table",
-      "Copy as Markdown straight into your README, or copy as docstrings",
-    ],
-    cta: "Try Document",
-    ctaClass: "bg-indigo-500 hover:bg-indigo-600 text-white",
+    step: "2",
+    title: "Deep Generation",
+    model: "Claude Sonnet",
+    desc: "Uses that intent to generate your structured output — a spec, an explanation, or an audit — including the systems context of what connects to what.",
   },
   {
-    icon: <GitCompare className="h-6 w-6 text-green-500" />,
-    accent: "border-green-500",
-    name: "Explain a Diff",
-    badge: "For PR reviews",
-    badgeColor: "bg-green-500/10 text-green-500",
-    href: "/diff",
-    what: "Before merging any change, see the blast radius. Paste before and after — understand what changed, what it affects downstream, and whether this is a real fix or a workaround.",
-    steps: [
-      "Paste the old version on the left, new version on the right",
-      "Get a plain-English explanation of what changed and why",
-      "See the blast radius: what this change breaks or improves",
-    ],
-    cta: "Try Diff",
-    ctaClass: "bg-green-500 hover:bg-green-600 text-white",
-  },
-  {
-    icon: <Shield className="h-6 w-6 text-orange-500" />,
-    accent: "border-orange-500",
-    name: "Defend",
-    badge: "Reality check",
-    badgeColor: "bg-orange-500/10 text-orange-500",
-    href: "/defend",
-    what: "Point it at your GitHub repo. Five adversarial questions grounded in your actual code — architecture, edge cases, security, scalability, design tradeoffs. Find out if you can own what you shipped.",
-    steps: [
-      "Paste a public GitHub repository URL",
-      "Answer 5 hard questions about your own code",
-      "Get a Defense Score and a verdict on whether you actually understand your system",
-    ],
-    cta: "Try Defend",
-    ctaClass: "bg-orange-500 hover:bg-orange-600 text-white",
-  },
-  {
-    icon: <Zap className="h-6 w-6 text-yellow-500" />,
-    accent: "border-yellow-500",
-    name: "Ship Check",
-    badge: "Pre-ship",
-    badgeColor: "bg-yellow-500/10 text-yellow-600",
-    href: "/vibe-check",
-    what: "14 automated checks plus a systems stress test. Get a Ship Score out of 100 and a Failure Cascade — exactly what breaks first when your prototype meets real load.",
-    steps: [
-      "Paste a public GitHub repository URL",
-      "Wait ~25 seconds while 14 checks + a systems stress test run",
-      "Get your verdict, the failure chain at scale, and a file-level breakdown",
-    ],
-    cta: "Run Ship Check",
-    ctaClass: "bg-yellow-500 hover:bg-yellow-600 text-white",
+    step: "3",
+    title: "Accuracy Validation",
+    model: "Claude Haiku",
+    desc: "Cross-checks the output against your input. Errors are flagged and corrected before you see anything; if they can't be fixed, the confidence score drops.",
   },
 ];
 
-/* ─── Feature grid ───────────────────────────────────────────────────────── */
+/* ── Feature grid ────────────────────────────────────────────────────────── */
 const features = [
   {
+    icon: <Wand2 className="h-5 w-5 text-violet-500" />,
+    title: "Universal AI prompts",
+    description:
+      "Every Blueprint compiles into a ready-to-paste prompt tailored for Codex, Claude, ChatGPT, Cursor, or any agent — so your AI builds the right thing the first time.",
+  },
+  {
     icon: <Network className="h-5 w-5 text-blue-500" />,
-    title: "Systems Context",
+    title: "Systems context",
     description:
-      "Every explanation includes where the code fits in a system, what it depends on, and what breaks if it fails. Not just what the code does — but what it means for the system around it.",
+      "Every explanation shows where code fits in a system, what it depends on, and what breaks if it fails — not just what the code does.",
   },
   {
-    icon: <BookOpen className="h-5 w-5 text-purple-500" />,
-    title: "5 Audience Levels",
+    icon: <GitCompare className="h-5 w-5 text-emerald-500" />,
+    title: "Blast radius on every diff",
     description:
-      "ELI5, Non-Technical, Business Context, Technical Non-Dev, or Developer Peer. The same code explained completely differently depending on who's reading — not a one-size-fits-all dump.",
+      "Understand what a change actually does to your system — what it affects downstream and whether it improves or worsens resilience — before you merge.",
   },
   {
-    icon: <GitCompare className="h-5 w-5 text-green-500" />,
-    title: "Blast Radius on Every Diff",
+    icon: <AlertTriangle className="h-5 w-5 text-orange-500" />,
+    title: "Adversarial pressure-testing",
     description:
-      "Understand what a code change actually does to your system — what it affects downstream, whether it's breaking, and whether it improves or worsens resilience. Before you merge.",
+      "Defend grills your repo with 5 questions grounded in your actual code; Ship Check runs 14 checks plus a failure-cascade stress test.",
   },
   {
-    icon: <AlertTriangle className="h-5 w-5 text-red-500" />,
-    title: "Failure Cascade Analysis",
+    icon: <Layers className="h-5 w-5 text-indigo-500" />,
+    title: "3-layer AI validation",
     description:
-      "Ship Check runs a systems stress test: three specific failure chains grounded in your actual files — what breaks first at 10x load, and why. Not generic advice — specific to your code.",
-  },
-  {
-    icon: <Shield className="h-5 w-5 text-orange-500" />,
-    title: "Defend Mode",
-    description:
-      "5 adversarial questions covering architecture, edge cases, security, scalability, and design decisions. Scored 0–100 per answer. Find out if you can actually stand by what you shipped.",
-  },
-  {
-    icon: <Layers className="h-5 w-5 text-yellow-500" />,
-    title: "3-Layer AI Validation",
-    description:
-      "Three Claude models run in sequence: one reads for intent, one generates output, one validates for errors. Built as a system — no single point of failure in the pipeline itself.",
-  },
-  {
-    icon: <GitBranch className="h-5 w-5 text-cyan-500" />,
-    title: "Architecture Diagrams",
-    description:
-      "Ship Check auto-generates a Mermaid architecture diagram of your repo. Every Explain also generates a logic flow diagram. See the structure, not just the code.",
-  },
-  {
-    icon: <Database className="h-5 w-5 text-teal-500" />,
-    title: "Q&A with Full Context",
-    description:
-      "After any explanation or audit, ask follow-up questions with full code context preserved. 'What happens if this function throws?' gets a grounded answer — not a generic one.",
+      "Three Claude models run in sequence — one reads for intent, one generates, one validates for errors. Built as a system, with no single point of failure.",
   },
   {
     icon: <Lock className="h-5 w-5 text-slate-500" />,
-    title: "Privacy Mode",
+    title: "Private & free",
     description:
-      "Opt in to disable AI training on your code. Your snippets are never stored, logged, or used to improve models — useful for proprietary codebases or sensitive business logic.",
+      "No sign-up, no database, nothing stored on our servers. Opt into Privacy Mode to disable AI training on your code entirely.",
   },
 ];
 
-/* ─── Page ───────────────────────────────────────────────────────────────── */
+/* ── Stage → arc step ────────────────────────────────────────────────────── */
+function StageStep({ stageId, label, blurb }: { stageId: StageId; label: string; blurb: string }) {
+  const tools = toolsByStage(stageId);
+  const isBuild = stageId === "build";
+  const Icon = isBuild ? BUILD_STAGE_ICON : tools[0]?.Icon ?? Sparkles;
+  const accentText = isBuild ? "text-muted-foreground" : tools[0]?.accent.text ?? "text-primary";
+
+  return (
+    <div className="relative flex-1 md:min-w-[150px]">
+      <div className="rounded-xl border border-border bg-card p-4 h-full shadow-card card-hover">
+        <div className="flex items-center gap-2">
+          <span className={`flex h-8 w-8 items-center justify-center rounded-lg bg-muted ${accentText}`}>
+            <Icon className="h-4 w-4" />
+          </span>
+          <span className="text-sm font-semibold text-foreground">{label}</span>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{blurb}</p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {isBuild ? (
+            <span className="text-[11px] text-muted-foreground italic">your AI agent</span>
+          ) : (
+            tools.map((t) => (
+              <Link
+                key={t.id}
+                href={t.href}
+                className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${t.accent.soft} hover:opacity-80 transition-opacity`}
+              >
+                {t.name}
+              </Link>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Page ────────────────────────────────────────────────────────────────── */
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
-
-      {/* ── Navbar ── */}
-      <nav className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-semibold text-lg">
-            <Code2 className="h-5 w-5 text-primary" />
-            PlainCode
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/explain" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Explain
-            </Link>
-            <Link href="/document" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Document
-            </Link>
-            <Link href="/vibe-check" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Ship Check
-            </Link>
-            <Link href="/defend" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Defend
-            </Link>
-            <Link
-              href="/vibe-check"
-              className="text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors"
-            >
-              Try free
-            </Link>
-            <ThemeToggle />
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
 
       {/* ── Hero ── */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 text-center">
-        <div className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-3 py-1 rounded-full mb-6 font-medium">
-          <Zap className="h-3.5 w-3.5" />
-          Free · No sign-up · 5,000+ repos checked
-        </div>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground tracking-tight leading-tight">
-          Prototypes impress.{" "}
-          <span className="text-primary">Systems survive.</span>
-        </h1>
-        <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          PlainCode helps you close the gap. Four tools that push you to think one level deeper —
-          from code to system, from working to production-grade, from shipped to owned.
-        </p>
-        <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
-          <Link
-            href="/vibe-check"
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm"
-          >
-            <Zap className="h-4 w-4" />
-            Stress-test your repo
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/defend"
-            className="flex items-center gap-2 border border-border px-6 py-3 rounded-lg font-semibold hover:bg-accent transition-colors text-sm"
-          >
-            <Shield className="h-4 w-4" />
-            Defend your code
-          </Link>
-          <Link
-            href="/explain"
-            className="flex items-center gap-2 border border-border px-6 py-3 rounded-lg font-semibold hover:bg-accent transition-colors text-sm"
-          >
-            <Sparkles className="h-4 w-4" />
-            Explain a snippet
-          </Link>
-        </div>
-      </section>
-
-      {/* ── Demo Ship Check ── */}
-      <DemoShipCheck />
-
-      {/* ── What is PlainCode? ── */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="rounded-xl border border-border bg-card p-8 space-y-4">
-          <h2 className="text-xl font-bold text-foreground">What is PlainCode?</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            PlainCode exists because vibe coding produces prototypes, not systems. Every tool here pushes
-            you to think one level deeper than the code in front of you — toward the system it belongs to,
-            the dependencies it creates, and the failure modes it introduces.
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid" aria-hidden />
+        <div className="absolute inset-0 bg-radial-glow" aria-hidden />
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 text-center">
+          <div className="inline-flex items-center gap-1.5 text-xs font-medium bg-card border border-border text-muted-foreground px-3 py-1 rounded-full mb-6 shadow-card float-up">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            Spec-driven · Free · No sign-up
+          </div>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] float-up">
+            From <span className="text-gradient">idea</span> to{" "}
+            <span className="text-gradient">shipped system</span>
+          </h1>
+          <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed float-up">
+            AI builds whatever you ask — including the wrong thing. PlainCode is the workspace that turns a
+            vague idea into a build-ready spec, then helps you understand, harden, and ship the code your AI
+            writes. One arc, six tools, no vibe-coding blind.
           </p>
-          <p className="text-muted-foreground leading-relaxed">
-            Whether you&apos;re explaining a snippet to a teammate, reviewing a PR, defending your
-            architecture, or stress-testing your pre-ship code, you&apos;re always asking the same
-            question: <span className="text-foreground font-medium">does this hold up?</span>
-          </p>
-          <p className="text-muted-foreground leading-relaxed">
-            Unlike a plain AI prompt, every result runs through a{" "}
-            <span className="text-foreground font-medium">3-layer validation pipeline</span> — one model
-            reads for intent, one generates the output, one checks it for errors. The pipeline itself is
-            built as a system. There are no single points of failure.
-          </p>
-        </div>
-      </section>
-
-      {/* ── Tools ── */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl font-bold text-foreground">Four ways to think in systems</h2>
-          <p className="text-sm text-muted-foreground mt-2">Pick the one that fits what you need right now.</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {tools.map((tool) => (
-            <div
-              key={tool.name}
-              className={`rounded-xl border border-border bg-card overflow-hidden flex flex-col border-t-4 ${tool.accent}`}
+          <div className="mt-9 flex items-center justify-center gap-3 flex-wrap float-up">
+            <Link
+              href="/blueprint"
+              className="inline-flex items-center gap-2 bg-brand-gradient text-white px-6 py-3 rounded-lg font-semibold shadow-glow hover:opacity-90 transition-opacity"
             >
-              <div className="p-6 flex-1 space-y-4">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-muted">{tool.icon}</div>
-                    <h3 className="text-lg font-bold text-foreground">{tool.name}</h3>
-                  </div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${tool.badgeColor}`}>
-                    {tool.badge}
-                  </span>
+              <Wand2 className="h-4 w-4" />
+              Start a Blueprint
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+            <a
+              href="#arc"
+              className="inline-flex items-center gap-2 border border-border bg-card px-6 py-3 rounded-lg font-semibold hover:bg-accent transition-colors shadow-card"
+            >
+              See how it works
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── The arc ── */}
+      <section id="arc" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">One arc, end to end</h2>
+          <p className="text-sm text-muted-foreground mt-2 max-w-xl mx-auto">
+            Most AI tools drop you into a chat box. PlainCode walks the whole path — so you always know which
+            step you&apos;re on and what to do next.
+          </p>
+        </div>
+        <div className="flex flex-col md:flex-row items-stretch gap-3">
+          {STAGES.map((s, i) => (
+            <div key={s.id} className="flex items-stretch gap-3 flex-1">
+              <StageStep stageId={s.id} label={s.label} blurb={s.blurb} />
+              {i < STAGES.length - 1 && (
+                <div className="hidden md:flex items-center text-muted-foreground/40">
+                  <ArrowRight className="h-4 w-4" />
                 </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
-                {/* Description */}
-                <p className="text-sm text-muted-foreground leading-relaxed">{tool.what}</p>
+      {/* ── Before / after ── */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+        <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+            <div className="p-7 space-y-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                What you type
+              </span>
+              <p className="text-sm text-foreground/80 leading-relaxed font-mono bg-muted/50 rounded-lg p-4">
+                &quot;an app where people can track their gym workouts and maybe share them with friends idk,
+                something simple&quot;
+              </p>
+            </div>
+            <div className="p-7 space-y-3 bg-radial-glow">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                What Blueprint hands your AI
+              </span>
+              <ul className="space-y-2 text-sm text-foreground/90">
+                {[
+                  "A scoped MVP: log workouts, view history, follow friends",
+                  "Clear non-goals: no social feed, no coaching, no payments — yet",
+                  "Data model, user flow, and a tailored build prompt for your tool",
+                  "A validation checklist so you know when v1 is actually done",
+                ].map((line) => (
+                  <li key={line} className="flex items-start gap-2">
+                    <ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
 
-                {/* How to use */}
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-foreground uppercase tracking-wide">How to use</p>
+      {/* ── Tools by stage ── */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Six tools, one workflow</h2>
+          <p className="text-sm text-muted-foreground mt-2">Each one does a single job exceptionally well.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {TOOLS.map((tool) => {
+            const Icon = tool.Icon;
+            return (
+              <div
+                key={tool.id}
+                className="rounded-xl border border-border bg-card overflow-hidden flex flex-col shadow-card card-hover"
+              >
+                <div className="p-6 flex-1 space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className={`flex h-10 w-10 items-center justify-center rounded-xl bg-muted ${tool.accent.text}`}>
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <h3 className="text-lg font-bold text-foreground">{tool.name}</h3>
+                    </div>
+                    {tool.badge && (
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${tool.accent.soft}`}>
+                        {tool.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{tool.blurb}</p>
                   <ol className="space-y-1.5">
                     {tool.steps.map((step, i) => (
                       <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
@@ -304,65 +255,36 @@ export default function LandingPage() {
                     ))}
                   </ol>
                 </div>
+                <div className="px-6 pb-6">
+                  <Link
+                    href={tool.href}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${tool.accent.solid} ${tool.accent.solidHover}`}
+                  >
+                    Open {tool.name}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
-
-              {/* CTA */}
-              <div className="px-6 pb-6">
-                <Link
-                  href={tool.href}
-                  className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${tool.ctaClass}`}
-                >
-                  {tool.cta}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
-      {/* ── How it works ── */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* ── How the AI pipeline works ── */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
         <div className="text-center mb-10">
-          <h2 className="text-2xl font-bold text-foreground">How the AI pipeline works</h2>
-          <p className="text-sm text-muted-foreground mt-2">
-            Three models. One result. No single point of failure.
-          </p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">How the AI pipeline works</h2>
+          <p className="text-sm text-muted-foreground mt-2">Three models. One result. No single point of failure.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            {
-              step: "1",
-              color: "text-blue-500",
-              ring: "ring-blue-500/20 bg-blue-500/10",
-              title: "Intent Analysis",
-              model: "Claude Haiku",
-              desc: "Reads your code first to understand what it does, what language and frameworks are used, and how complex it is. This context grounds everything that follows and prevents hallucinations.",
-            },
-            {
-              step: "2",
-              color: "text-primary",
-              ring: "ring-primary/20 bg-primary/10",
-              title: "Deep Generation",
-              model: "Claude Sonnet",
-              desc: "Uses the intent context to generate your structured output — explanation, questions, or audit — including the systems context of what this code connects to and what it breaks if it fails.",
-            },
-            {
-              step: "3",
-              color: "text-green-500",
-              ring: "ring-green-500/20 bg-green-500/10",
-              title: "Accuracy Validation",
-              model: "Claude Haiku",
-              desc: "Cross-checks the generated output against your original code. Factual errors are flagged and corrected before you see anything. If it can't be fixed, the confidence score drops.",
-            },
-          ].map((s) => (
-            <div key={s.step} className="rounded-xl border border-border bg-card p-6 space-y-3 relative">
-              <div className={`w-10 h-10 rounded-full ring-2 ${s.ring} flex items-center justify-center`}>
-                <span className={`text-lg font-black ${s.color}`}>{s.step}</span>
+          {pipeline.map((s) => (
+            <div key={s.step} className="rounded-xl border border-border bg-card p-6 space-y-3 shadow-card">
+              <div className="w-10 h-10 rounded-full bg-brand-gradient flex items-center justify-center">
+                <span className="text-lg font-black text-white">{s.step}</span>
               </div>
               <div>
                 <p className="font-semibold text-foreground">{s.title}</p>
-                <p className={`text-xs font-medium ${s.color} mt-0.5`}>{s.model}</p>
+                <p className="text-xs font-medium text-primary mt-0.5">{s.model}</p>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
             </div>
@@ -371,14 +293,14 @@ export default function LandingPage() {
       </section>
 
       {/* ── Feature grid ── */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
         <div className="text-center mb-10">
-          <h2 className="text-2xl font-bold text-foreground">Everything included, nothing locked</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Everything included, nothing locked</h2>
           <p className="text-sm text-muted-foreground mt-2">All features free. No tiers. No paywalls.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((f) => (
-            <div key={f.title} className="rounded-lg border border-border bg-card p-5 space-y-2">
+            <div key={f.title} className="rounded-xl border border-border bg-card p-5 space-y-2 shadow-card">
               <div className="flex items-center gap-2">
                 {f.icon}
                 <h3 className="font-semibold text-sm text-foreground">{f.title}</h3>
@@ -389,39 +311,36 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA ── */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <h2 className="text-3xl font-bold text-foreground">Start thinking in systems — free, no account needed</h2>
-        <p className="mt-3 text-muted-foreground">Paste your first snippet or repo in 30 seconds.</p>
-        <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
-          <Link
-            href="/vibe-check"
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-          >
-            <Zap className="h-4 w-4" />
-            Run Ship Check
-          </Link>
-          <Link
-            href="/explain"
-            className="inline-flex items-center gap-2 border border-border px-8 py-3 rounded-lg font-semibold hover:bg-accent transition-colors"
-          >
-            <Sparkles className="h-4 w-4" />
-            Explain some code
-          </Link>
+      {/* ── Final CTA ── */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-10 text-center shadow-elevated">
+          <div className="absolute inset-0 bg-radial-glow" aria-hidden />
+          <div className="relative">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Start with the idea. Ship the system.
+            </h2>
+            <p className="mt-3 text-muted-foreground">Write your first Blueprint in under a minute — free, no account.</p>
+            <div className="mt-7 flex items-center justify-center gap-3 flex-wrap">
+              <Link
+                href="/blueprint"
+                className="inline-flex items-center gap-2 bg-brand-gradient text-white px-7 py-3 rounded-lg font-semibold shadow-glow hover:opacity-90 transition-opacity"
+              >
+                <Wand2 className="h-4 w-4" />
+                Start a Blueprint
+              </Link>
+              <Link
+                href="/explain"
+                className="inline-flex items-center gap-2 border border-border px-7 py-3 rounded-lg font-semibold hover:bg-accent transition-colors"
+              >
+                <Sparkles className="h-4 w-4" />
+                Explain some code
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-border py-8">
-        <div className="max-w-5xl mx-auto px-4 flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Code2 className="h-3.5 w-3.5 text-primary" />
-            PlainCode
-          </div>
-          <p>Free for everyone</p>
-        </div>
-      </footer>
-
+      <Footer />
     </div>
   );
 }

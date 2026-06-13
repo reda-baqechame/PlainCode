@@ -1,6 +1,6 @@
 # </> PlainCode
 
-**Understand any code in seconds — and prove you understand your own.** PlainCode explains any code snippet in plain English, and challenges you to defend your own codebase under adversarial questioning. Powered by a 3-layer AI accuracy pipeline.
+**From idea to shipped system.** PlainCode is the spec-driven workspace for building with AI: turn a vague idea into a build-ready Blueprint, then understand, harden, and ship the code your AI agent writes. Powered by a 3-layer AI accuracy pipeline.
 
 Free. No sign-up required.
 
@@ -8,19 +8,40 @@ Free. No sign-up required.
 
 ## What It Does
 
-PlainCode has these modes:
+PlainCode walks the whole arc — **Plan → Build → Understand → Harden → Ship** — with one tool per stage:
 
-| Mode | What it does |
-|------|-------------|
-| **Explain** | Paste code, pick your audience, get a structured plain-English explanation |
-| **Document** | Paste a snippet or point at a repo — get README-ready docs with three diagrams, an API reference, and one-click export |
-| **Diff** | Compare two versions of code and understand what changed and why |
-| **Defend** | Point at a GitHub repo — get grilled with 5 adversarial questions, scored 0–100 per answer |
-| **Ship Check** | Run automated checks + a systems stress test on a repo and get a Ship Score |
+| Stage | Mode | What it does |
+|-------|------|-------------|
+| Plan | **Blueprint** | Describe a vague idea — get a build-ready spec plus a ready-to-paste prompt for Codex, Claude, ChatGPT, Cursor, or any AI agent |
+| Understand | **Explain** | Paste code, pick your audience, get a structured plain-English explanation |
+| Understand | **Document** | Paste a snippet or point at a repo — get README-ready docs with three diagrams, an API reference, and one-click export |
+| Understand | **Diff** | Compare two versions of code and understand what changed and why |
+| Harden | **Defend** | Point at a GitHub repo — get grilled with 5 adversarial questions, scored 0–100 per answer |
+| Ship | **Ship Check** | Run automated checks + a systems stress test on a repo and get a Ship Score |
 
 ---
 
 ## Features
+
+### Blueprint Mode *(new)*
+
+The pre-code stage: turn a half-formed idea into a precise, build-ready spec for any AI coding agent. Most people don't fail with AI because the model is weak — they fail because they give it incomplete context. Blueprint is the missing layer that fixes that.
+
+**How it works:**
+1. Describe what you're trying to build (messy is fine), who it's for, and the problem it solves — paste any extra notes
+2. A 3-layer AI pipeline reads the idea, maps what's clear vs. missing, and asks **5 clarifying questions** — the fewest needed to prevent a bad output
+3. Answer what you can (blanks are allowed)
+4. Get a structured **execution spec**: goal, target user, core promise, MVP features, non-goals, user flow, technical requirements, build tickets, and a validation checklist
+5. Copy a **tailored build prompt** for Codex, Claude, ChatGPT, Cursor, or any agent — each framed for that tool
+
+**Export & persistence:**
+- **Copy as Markdown** (spec + all five prompt variants) · **Copy link** — a self-contained URL that rehydrates the blueprint
+- **Follow-up Q&A** grounded in your blueprint
+- **Recent blueprints** — last 5 kept locally so you can reopen them instantly
+
+Built on the same Claude pipeline as every other mode. No new API keys, no database, no sign-up — fully stateless on the server; history and shares live in your browser.
+
+---
 
 ### Document Mode *(new)*
 
@@ -250,6 +271,8 @@ The app uses Next.js standalone output mode for containerized deployments (Railw
 
 | Method | Path | Description |
 |--------|------|-------------|
+| `POST` | `/api/blueprint/analyze` | Analyze a vague idea and generate 5 clarifying questions |
+| `POST` | `/api/blueprint/compile` | Compile the idea + answers into a spec and universal prompts |
 | `POST` | `/api/explain` | Explain a code snippet (SSE stream) |
 | `POST` | `/api/explain-diff` | Explain changes between two code versions (SSE stream) |
 | `POST` | `/api/document` | Generate full documentation — 12 sections incl. 3 diagrams (SSE stream) |

@@ -1,8 +1,10 @@
 import type { DocumentResult } from "@/types/explanation";
+import type { BlueprintResult } from "@/types/blueprint";
 
 const SHIP_KEY = "plaincode_ship_history";
 const DEFEND_KEY = "plaincode_defend_history";
 const DOCUMENT_KEY = "plaincode_document_history";
+const BLUEPRINT_KEY = "plaincode_blueprint_history";
 const MAX = 5;
 
 export interface ShipHistoryEntry {
@@ -89,4 +91,26 @@ export function getDocumentHistory(): DocumentHistoryEntry[] {
 export function deleteDocumentHistory(id: string): void {
   const list = readList<DocumentHistoryEntry>(DOCUMENT_KEY).filter((e) => e.id !== id);
   writeList(DOCUMENT_KEY, list);
+}
+
+export interface BlueprintHistoryEntry {
+  id: string;
+  name: string;
+  goal: string;
+  date: string;
+  result: BlueprintResult;
+}
+
+export function saveBlueprintHistory(entry: BlueprintHistoryEntry): void {
+  const list = readList<BlueprintHistoryEntry>(BLUEPRINT_KEY).filter((e) => e.id !== entry.id);
+  writeList(BLUEPRINT_KEY, [entry, ...list]);
+}
+
+export function getBlueprintHistory(): BlueprintHistoryEntry[] {
+  return readList<BlueprintHistoryEntry>(BLUEPRINT_KEY);
+}
+
+export function deleteBlueprintHistory(id: string): void {
+  const list = readList<BlueprintHistoryEntry>(BLUEPRINT_KEY).filter((e) => e.id !== id);
+  writeList(BLUEPRINT_KEY, list);
 }

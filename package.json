@@ -45,6 +45,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "codemirror": "^6.0.2",
+    "geist": "^1.7.2",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.577.0",
     "mermaid": "^11.13.0",

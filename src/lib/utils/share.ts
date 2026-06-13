@@ -1,5 +1,6 @@
 import type { CheckResult } from "@/app/api/vibe-check/route";
 import type { DocumentResult } from "@/types/explanation";
+import type { BlueprintResult } from "@/types/blueprint";
 
 export interface ShipShareData {
   repoUrl: string;
@@ -77,4 +78,30 @@ export function decodeDocumentShare(encoded: string): DocumentShareData | null {
 // length limits the way a query string is.
 export function buildDocumentShareUrl(origin: string, encoded: string): string {
   return `${origin}/document#d=${encoded}`;
+}
+
+export interface BlueprintShareData {
+  result: BlueprintResult;
+}
+
+export function encodeBlueprintShare(data: BlueprintShareData): string {
+  try {
+    return btoa(encodeURIComponent(JSON.stringify(data)));
+  } catch {
+    return "";
+  }
+}
+
+export function decodeBlueprintShare(encoded: string): BlueprintShareData | null {
+  try {
+    return JSON.parse(decodeURIComponent(atob(encoded))) as BlueprintShareData;
+  } catch {
+    return null;
+  }
+}
+
+// Blueprint payloads are large (full blueprint + five prompt variants), so they ride in
+// the URL hash fragment — same reasoning as document share links above.
+export function buildBlueprintShareUrl(origin: string, encoded: string): string {
+  return `${origin}/blueprint#bp=${encoded}`;
 }

@@ -21,6 +21,7 @@ import { RoastCard } from "@/components/RoastCard";
 import { FixPromptCard } from "@/components/FixPromptCard";
 import { FlowDiagram } from "@/components/output/FlowDiagram";
 import { FollowUpQA } from "@/components/FollowUpQA";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 type Phase =
   | "input"
@@ -431,16 +432,11 @@ export default function DefendPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 space-y-8">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Shield className="h-6 w-6 text-primary" />
-          Defend Your Code
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Point us at a public GitHub repo. We&apos;ll probe it with 5 adversarial questions and
-          score your answers.
-        </p>
-      </div>
+      <PageHeader
+        toolId="defend"
+        title="Defend Your Code"
+        subtitle="Point us at a public GitHub repo. We'll probe it with 5 adversarial questions and score your answers."
+      />
 
       {/* Error banner */}
       {error && (
