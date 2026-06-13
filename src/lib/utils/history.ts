@@ -1,10 +1,10 @@
 import type { DocumentResult } from "@/types/explanation";
-import type { BriefResult } from "@/types/brief";
+import type { BlueprintResult } from "@/types/blueprint";
 
 const SHIP_KEY = "plaincode_ship_history";
 const DEFEND_KEY = "plaincode_defend_history";
 const DOCUMENT_KEY = "plaincode_document_history";
-const BRIEF_KEY = "plaincode_brief_history";
+const BLUEPRINT_KEY = "plaincode_blueprint_history";
 const MAX = 5;
 
 export interface ShipHistoryEntry {
@@ -93,24 +93,24 @@ export function deleteDocumentHistory(id: string): void {
   writeList(DOCUMENT_KEY, list);
 }
 
-export interface BriefHistoryEntry {
+export interface BlueprintHistoryEntry {
   id: string;
   name: string;
   goal: string;
   date: string;
-  result: BriefResult;
+  result: BlueprintResult;
 }
 
-export function saveBriefHistory(entry: BriefHistoryEntry): void {
-  const list = readList<BriefHistoryEntry>(BRIEF_KEY).filter((e) => e.id !== entry.id);
-  writeList(BRIEF_KEY, [entry, ...list]);
+export function saveBlueprintHistory(entry: BlueprintHistoryEntry): void {
+  const list = readList<BlueprintHistoryEntry>(BLUEPRINT_KEY).filter((e) => e.id !== entry.id);
+  writeList(BLUEPRINT_KEY, [entry, ...list]);
 }
 
-export function getBriefHistory(): BriefHistoryEntry[] {
-  return readList<BriefHistoryEntry>(BRIEF_KEY);
+export function getBlueprintHistory(): BlueprintHistoryEntry[] {
+  return readList<BlueprintHistoryEntry>(BLUEPRINT_KEY);
 }
 
-export function deleteBriefHistory(id: string): void {
-  const list = readList<BriefHistoryEntry>(BRIEF_KEY).filter((e) => e.id !== id);
-  writeList(BRIEF_KEY, list);
+export function deleteBlueprintHistory(id: string): void {
+  const list = readList<BlueprintHistoryEntry>(BLUEPRINT_KEY).filter((e) => e.id !== id);
+  writeList(BLUEPRINT_KEY, list);
 }

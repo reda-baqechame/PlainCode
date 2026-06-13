@@ -9,10 +9,10 @@ import {
   Ticket,
   CheckSquare,
 } from "lucide-react";
-import type { BriefResult } from "@/types/brief";
+import type { BlueprintResult } from "@/types/blueprint";
 
 interface Props {
-  result: BriefResult;
+  result: BlueprintResult;
 }
 
 function BulletList({ items }: { items: string[] }) {
@@ -55,7 +55,7 @@ const PRIORITY_STYLE: Record<string, string> = {
   low: "bg-green-500/10 text-green-500",
 };
 
-export function BriefPanel({ result }: Props) {
+export function BlueprintPanel({ result }: Props) {
   return (
     <div className="space-y-4">
       {/* Goal + promise header */}
@@ -140,7 +140,7 @@ export function BriefPanel({ result }: Props) {
 
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-1">
         <Target className="h-3.5 w-3.5" />
-        Paste a prompt below into your AI tool — the brief above is the human-readable version.
+        Paste a prompt below into your AI tool — the blueprint above is the human-readable version.
       </div>
     </div>
   );

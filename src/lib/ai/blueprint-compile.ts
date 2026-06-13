@@ -1,16 +1,16 @@
 import { getAnthropicClient } from "@/lib/ai/client";
 import type {
   AnsweredQuestion,
-  BriefInput,
-  BriefResult,
+  BlueprintInput,
+  BlueprintResult,
   BuildTicket,
   PromptTarget,
-} from "@/types/brief";
+} from "@/types/blueprint";
 
-// Brief Compiler + Universal Prompt Generator for Brief mode.
-// Sonnet produces the structured brief + one canonical build prompt; the
+// Blueprint Compiler + Universal Prompt Generator for Blueprint mode.
+// Sonnet produces the structured blueprint + one canonical build prompt; the
 // per-tool framing and Markdown are built by pure (testable) functions here.
-// A Haiku pass validates the brief against the inputs (Layer-3 spirit).
+// A Haiku pass validates the blueprint against the inputs (Layer-3 spirit).
 
 function parseClaudeJSON<T>(text: string): T {
   const cleaned = text
@@ -20,8 +20,8 @@ function parseClaudeJSON<T>(text: string): T {
   return JSON.parse(cleaned) as T;
 }
 
-/** Everything Sonnet returns — BriefResult minus the derived markdown/prompts. */
-interface CompiledBrief {
+/** Everything Sonnet returns — BlueprintResult minus the derived markdown/prompts. */
+interface CompiledBlueprint {
   goal: string;
   targetUser: string;
   problem: string;
@@ -38,7 +38,7 @@ interface CompiledBrief {
   buildPrompt: string;
 }
 
-function contextBlock(input: BriefInput, answers: AnsweredQuestion[]): string {
+function contextBlock(input: BlueprintInput, answers: AnsweredQuestion[]): string {
   const qa = answers
     .filter((a) => a.answer.trim())
     .map((a) => `- (${a.category}) ${a.question}\n  Answer: ${a.answer}`)
@@ -55,8 +55,8 @@ function contextBlock(input: BriefInput, answers: AnsweredQuestion[]): string {
     .join("\n");
 }
 
-/** ── Pure: render the structured brief as Markdown (no AI, fully testable). ── */
-export function buildBriefMarkdown(b: CompiledBrief): string {
+/** ── Pure: render the structured blueprint as Markdown (no AI, fully testable). ── */
+export function buildBlueprintMarkdown(b: CompiledBlueprint): string {
   const bullets = (items: string[]) =>
     items.length ? items.map((i) => `- ${i}`).join("\n") : "_None specified._";
   const tickets = b.buildTickets.length
@@ -123,38 +123,38 @@ const TOOL_FRAMING: Record<PromptTarget, { label: string; header: string }> = {
 };
 
 /** ── Pure: wrap the canonical build prompt with a tool's framing. ── */
-export function wrapForTool(buildPrompt: string, brief: CompiledBrief, tool: PromptTarget): string {
+export function wrapForTool(buildPrompt: string, blueprint: CompiledBlueprint, tool: PromptTarget): string {
   const { header } = TOOL_FRAMING[tool];
   return [
     header,
     ``,
-    `=== PROJECT BRIEF ===`,
-    `Goal: ${brief.goal}`,
-    `Target user: ${brief.targetUser}`,
-    `Core promise: ${brief.corePromise}`,
+    `=== PROJECT BLUEPRINT ===`,
+    `Goal: ${blueprint.goal}`,
+    `Target user: ${blueprint.targetUser}`,
+    `Core promise: ${blueprint.corePromise}`,
     ``,
     `=== BUILD INSTRUCTIONS ===`,
     buildPrompt,
     ``,
     `=== DEFINITION OF DONE ===`,
-    brief.validationChecklist.length
-      ? brief.validationChecklist.map((c) => `- ${c}`).join("\n")
+    blueprint.validationChecklist.length
+      ? blueprint.validationChecklist.map((c) => `- ${c}`).join("\n")
       : "- The MVP runs locally and delivers the core promise.",
   ].join("\n");
 }
 
-function buildAllPrompts(brief: CompiledBrief): Record<PromptTarget, string> {
+function buildAllPrompts(blueprint: CompiledBlueprint): Record<PromptTarget, string> {
   const targets: PromptTarget[] = ["codex", "claude", "chatgpt", "cursor", "generic"];
   return targets.reduce(
     (acc, t) => {
-      acc[t] = wrapForTool(brief.buildPrompt, brief, t);
+      acc[t] = wrapForTool(blueprint.buildPrompt, blueprint, t);
       return acc;
     },
     {} as Record<PromptTarget, string>
   );
 }
 
-async function compile(input: BriefInput, answers: AnsweredQuestion[]): Promise<CompiledBrief> {
+async function compile(input: BlueprintInput, answers: AnsweredQuestion[]): Promise<CompiledBlueprint> {
   const client = getAnthropicClient();
   const res = await client.messages.create({
     model: "claude-sonnet-4-6",
@@ -162,7 +162,7 @@ async function compile(input: BriefInput, answers: AnsweredQuestion[]): Promise<
     messages: [
       {
         role: "user",
-        content: `You are a product strategist turning a founder's idea and clarifying answers into a precise, build-ready execution brief for an AI coding agent. Ground every field in the context below — do not invent features the user never implied.
+        content: `You are a product strategist turning a founder's idea and clarifying answers into a precise, build-ready execution blueprint for an AI coding agent. Ground every field in the context below — do not invent features the user never implied.
 
 CONTEXT:
 ${contextBlock(input, answers)}
@@ -190,12 +190,12 @@ Return ONLY valid JSON, no markdown, in exactly this shape:
   });
 
   const block = res.content[0];
-  if (!block || block.type !== "text") throw new Error("No brief generated");
-  return parseClaudeJSON<CompiledBrief>(block.text);
+  if (!block || block.type !== "text") throw new Error("No blueprint generated");
+  return parseClaudeJSON<CompiledBlueprint>(block.text);
 }
 
 /** Layer-3 spirit: cheap pass that flags features unsupported by the input. */
-async function validateBrief(brief: CompiledBrief, input: BriefInput): Promise<CompiledBrief> {
+async function validateBlueprint(blueprint: CompiledBlueprint, input: BlueprintInput): Promise<CompiledBlueprint> {
   const client = getAnthropicClient();
   try {
     const res = await client.messages.create({
@@ -204,11 +204,11 @@ async function validateBrief(brief: CompiledBrief, input: BriefInput): Promise<C
       messages: [
         {
           role: "user",
-          content: `Review this brief's MVP feature list against the original idea. Remove only features that are clearly not implied by the idea or answers (scope creep). Keep everything supported. Return ONLY valid JSON, no markdown:
+          content: `Review this blueprint's MVP feature list against the original idea. Remove only features that are clearly not implied by the idea or answers (scope creep). Keep everything supported. Return ONLY valid JSON, no markdown:
 
 ORIGINAL IDEA: ${input.rawIdea}
 EXTRA CONTEXT: ${input.extraContext || "(none)"}
-MVP FEATURES: ${JSON.stringify(brief.mvpFeatures)}
+MVP FEATURES: ${JSON.stringify(blueprint.mvpFeatures)}
 
 { "mvpFeatures": ["<kept / trimmed feature>", "..."] }`,
         },
@@ -218,36 +218,36 @@ MVP FEATURES: ${JSON.stringify(brief.mvpFeatures)}
     if (block && block.type === "text") {
       const parsed = parseClaudeJSON<{ mvpFeatures: string[] }>(block.text);
       if (Array.isArray(parsed.mvpFeatures) && parsed.mvpFeatures.length > 0) {
-        return { ...brief, mvpFeatures: parsed.mvpFeatures };
+        return { ...blueprint, mvpFeatures: parsed.mvpFeatures };
       }
     }
   } catch {
     // fall through — validation is best-effort
   }
-  return brief;
+  return blueprint;
 }
 
-/** Full compile step: structured brief + markdown + universal prompts. */
-export async function compileBrief(
-  input: BriefInput,
+/** Full compile step: structured blueprint + markdown + universal prompts. */
+export async function compileBlueprint(
+  input: BlueprintInput,
   answers: AnsweredQuestion[]
-): Promise<BriefResult> {
+): Promise<BlueprintResult> {
   const raw = await compile(input, answers);
-  const brief = await validateBrief(raw, input);
+  const blueprint = await validateBlueprint(raw, input);
   return {
-    goal: brief.goal,
-    targetUser: brief.targetUser,
-    problem: brief.problem,
-    corePromise: brief.corePromise,
-    mvpFeatures: brief.mvpFeatures,
-    nonGoals: brief.nonGoals,
-    userFlow: brief.userFlow,
-    techStack: brief.techStack,
-    dbNeeds: brief.dbNeeds,
-    aiBehavior: brief.aiBehavior,
-    buildTickets: brief.buildTickets,
-    validationChecklist: brief.validationChecklist,
-    briefMarkdown: buildBriefMarkdown(brief),
-    prompts: buildAllPrompts(brief),
+    goal: blueprint.goal,
+    targetUser: blueprint.targetUser,
+    problem: blueprint.problem,
+    corePromise: blueprint.corePromise,
+    mvpFeatures: blueprint.mvpFeatures,
+    nonGoals: blueprint.nonGoals,
+    userFlow: blueprint.userFlow,
+    techStack: blueprint.techStack,
+    dbNeeds: blueprint.dbNeeds,
+    aiBehavior: blueprint.aiBehavior,
+    buildTickets: blueprint.buildTickets,
+    validationChecklist: blueprint.validationChecklist,
+    blueprintMarkdown: buildBlueprintMarkdown(blueprint),
+    prompts: buildAllPrompts(blueprint),
   };
 }

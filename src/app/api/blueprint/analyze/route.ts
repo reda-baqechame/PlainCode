@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { analyzeBrief } from "@/lib/ai/brief-analyze";
+import { analyzeBlueprint } from "@/lib/ai/blueprint-analyze";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
@@ -12,7 +12,7 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const limited = enforceRateLimit(req, "brief", 15);
+  const limited = enforceRateLimit(req, "blueprint", 15);
   if (limited) return limited;
 
   const body = await req.json().catch(() => null);
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await analyzeBrief(parsed.data);
+    const result = await analyzeBlueprint(parsed.data);
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(

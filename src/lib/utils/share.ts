@@ -1,6 +1,6 @@
 import type { CheckResult } from "@/app/api/vibe-check/route";
 import type { DocumentResult } from "@/types/explanation";
-import type { BriefResult } from "@/types/brief";
+import type { BlueprintResult } from "@/types/blueprint";
 
 export interface ShipShareData {
   repoUrl: string;
@@ -80,11 +80,11 @@ export function buildDocumentShareUrl(origin: string, encoded: string): string {
   return `${origin}/document#d=${encoded}`;
 }
 
-export interface BriefShareData {
-  result: BriefResult;
+export interface BlueprintShareData {
+  result: BlueprintResult;
 }
 
-export function encodeBriefShare(data: BriefShareData): string {
+export function encodeBlueprintShare(data: BlueprintShareData): string {
   try {
     return btoa(encodeURIComponent(JSON.stringify(data)));
   } catch {
@@ -92,16 +92,16 @@ export function encodeBriefShare(data: BriefShareData): string {
   }
 }
 
-export function decodeBriefShare(encoded: string): BriefShareData | null {
+export function decodeBlueprintShare(encoded: string): BlueprintShareData | null {
   try {
-    return JSON.parse(decodeURIComponent(atob(encoded))) as BriefShareData;
+    return JSON.parse(decodeURIComponent(atob(encoded))) as BlueprintShareData;
   } catch {
     return null;
   }
 }
 
-// Brief payloads are large (full brief + five prompt variants), so they ride in
+// Blueprint payloads are large (full blueprint + five prompt variants), so they ride in
 // the URL hash fragment — same reasoning as document share links above.
-export function buildBriefShareUrl(origin: string, encoded: string): string {
-  return `${origin}/brief#b=${encoded}`;
+export function buildBlueprintShareUrl(origin: string, encoded: string): string {
+  return `${origin}/blueprint#bp=${encoded}`;
 }

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
-import type { PromptTarget } from "@/types/brief";
+import type { PromptTarget } from "@/types/blueprint";
 import { cn } from "@/lib/utils/cn";
 
 const TABS: { key: PromptTarget; label: string }[] = [

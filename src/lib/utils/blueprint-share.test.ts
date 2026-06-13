@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { encodeBriefShare, decodeBriefShare, buildBriefShareUrl } from "./share";
-import { exportBriefMarkdown } from "./export-markdown";
-import type { BriefResult } from "@/types/brief";
+import { encodeBlueprintShare, decodeBlueprintShare, buildBlueprintShareUrl } from "./share";
+import { exportBlueprintMarkdown } from "./export-markdown";
+import type { BlueprintResult } from "@/types/blueprint";
 
 beforeAll(() => {
   if (typeof globalThis.btoa === "undefined") {
@@ -10,11 +10,11 @@ beforeAll(() => {
   }
 });
 
-const result: BriefResult = {
+const result: BlueprintResult = {
   goal: "Build ContextOS",
   targetUser: "founders",
   problem: "bad AI context",
-  corePromise: "vague idea → perfect brief",
+  corePromise: "vague idea → perfect blueprint",
   mvpFeatures: ["projects", "5 questions"],
   nonGoals: ["no team accounts"],
   userFlow: "1. paste\n2. answer\n3. copy",
@@ -22,8 +22,8 @@ const result: BriefResult = {
   dbNeeds: "projects table",
   aiBehavior: "fewest questions",
   buildTickets: [{ title: "Shell", description: "scaffold", priority: "high" }],
-  validationChecklist: ["generates a brief"],
-  briefMarkdown: "# Build ContextOS\n\nbody — café 日本語",
+  validationChecklist: ["generates a blueprint"],
+  blueprintMarkdown: "# Build ContextOS\n\nbody — café 日本語",
   prompts: {
     codex: "CODEX PROMPT",
     claude: "CLAUDE PROMPT",
@@ -33,34 +33,34 @@ const result: BriefResult = {
   },
 };
 
-describe("brief share encode/decode", () => {
-  it("round-trips a full brief result", () => {
-    const encoded = encodeBriefShare({ result });
+describe("blueprint share encode/decode", () => {
+  it("round-trips a full blueprint result", () => {
+    const encoded = encodeBlueprintShare({ result });
     expect(encoded.length).toBeGreaterThan(0);
-    const decoded = decodeBriefShare(encoded);
+    const decoded = decodeBlueprintShare(encoded);
     expect(decoded).not.toBeNull();
     expect(decoded!.result.goal).toBe(result.goal);
     expect(decoded!.result.prompts.cursor).toBe("CURSOR PROMPT");
   });
 
   it("preserves unicode in the markdown", () => {
-    const decoded = decodeBriefShare(encodeBriefShare({ result }));
-    expect(decoded!.result.briefMarkdown).toContain("café 日本語");
+    const decoded = decodeBlueprintShare(encodeBlueprintShare({ result }));
+    expect(decoded!.result.blueprintMarkdown).toContain("café 日本語");
   });
 
   it("returns null on malformed input", () => {
-    expect(decodeBriefShare("@@@nope@@@")).toBeNull();
-    expect(decodeBriefShare("")).toBeNull();
+    expect(decodeBlueprintShare("@@@nope@@@")).toBeNull();
+    expect(decodeBlueprintShare("")).toBeNull();
   });
 
   it("builds a hash-fragment share URL", () => {
-    expect(buildBriefShareUrl("https://x.app", "ABC")).toBe("https://x.app/brief#b=ABC");
+    expect(buildBlueprintShareUrl("https://x.app", "ABC")).toBe("https://x.app/blueprint#bp=ABC");
   });
 });
 
-describe("exportBriefMarkdown", () => {
-  it("includes the brief body and every tool prompt", () => {
-    const md = exportBriefMarkdown(result);
+describe("exportBlueprintMarkdown", () => {
+  it("includes the blueprint body and every tool prompt", () => {
+    const md = exportBlueprintMarkdown(result);
     expect(md).toContain("# Build ContextOS");
     expect(md).toContain("## AI Build Prompts");
     for (const label of ["Codex", "Claude", "ChatGPT", "Cursor", "Any AI agent"]) {

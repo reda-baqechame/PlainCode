@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { compileBrief } from "@/lib/ai/brief-compile";
+import { compileBlueprint } from "@/lib/ai/blueprint-compile";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
@@ -24,7 +24,7 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const limited = enforceRateLimit(req, "brief", 15);
+  const limited = enforceRateLimit(req, "blueprint", 15);
   if (limited) return limited;
 
   const body = await req.json().catch(() => null);
@@ -34,11 +34,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await compileBrief(parsed.data.input, parsed.data.answers);
+    const result = await compileBlueprint(parsed.data.input, parsed.data.answers);
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to compile brief" },
+      { error: err instanceof Error ? err.message : "Failed to compile blueprint" },
       { status: 500 }
     );
   }

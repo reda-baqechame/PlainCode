@@ -1,6 +1,6 @@
 "use client";
 import { Sparkles, ChevronRight } from "lucide-react";
-import type { AnalyzeResult, AnsweredQuestion } from "@/types/brief";
+import type { AnalyzeResult, AnsweredQuestion } from "@/types/blueprint";
 
 interface Props {
   analysis: AnalyzeResult;
@@ -37,7 +37,7 @@ export function ClarifyingQuestions({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Answer what you can — blanks are fine. The more you give, the sharper the brief.
+        Answer what you can — blanks are fine. The more you give, the sharper the blueprint.
       </p>
 
       {/* Questions */}
@@ -76,7 +76,7 @@ export function ClarifyingQuestions({
           className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sparkles className="h-4 w-4" />
-          Compile my brief
+          Compile my blueprint
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>

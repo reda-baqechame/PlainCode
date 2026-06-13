@@ -1,53 +1,53 @@
 import { describe, it, expect } from "vitest";
-import { wrapForTool, buildBriefMarkdown } from "./brief-compile";
+import { wrapForTool, buildBlueprintMarkdown } from "./blueprint-compile";
 
-// A CompiledBrief-shaped fixture (the interface is internal; structural typing
+// A CompiledBlueprint-shaped fixture (the interface is internal; structural typing
 // lets us pass a matching object literal).
-const brief = {
+const blueprint = {
   goal: "Build ContextOS, a context compiler for AI tools",
   targetUser: "non-technical founders",
   problem: "people give AI bad context",
-  corePromise: "turn a vague idea into a perfect execution brief",
-  mvpFeatures: ["create a project", "ask 5 questions", "generate a brief"],
+  corePromise: "turn a vague idea into a perfect execution blueprint",
+  mvpFeatures: ["create a project", "ask 5 questions", "generate a blueprint"],
   nonGoals: ["no Gmail integration", "no team accounts"],
-  userFlow: "1. paste idea\n2. answer questions\n3. copy brief",
+  userFlow: "1. paste idea\n2. answer questions\n3. copy blueprint",
   techStack: "Next.js, Tailwind, Supabase",
-  dbNeeds: "projects and briefs tables",
+  dbNeeds: "projects and blueprints tables",
   aiBehavior: "ask the fewest questions needed",
   buildTickets: [
     { title: "App shell", description: "scaffold pages", priority: "high" as const },
   ],
-  validationChecklist: ["the brief generates", "prompts copy cleanly"],
+  validationChecklist: ["the blueprint generates", "prompts copy cleanly"],
   buildPrompt: "Build an MVP web app called ContextOS with these pages...",
 };
 
 describe("wrapForTool", () => {
-  it("includes the build prompt and brief goal for every target", () => {
+  it("includes the build prompt and blueprint goal for every target", () => {
     for (const tool of ["codex", "claude", "chatgpt", "cursor", "generic"] as const) {
-      const out = wrapForTool(brief.buildPrompt, brief, tool);
-      expect(out).toContain(brief.buildPrompt);
-      expect(out).toContain(brief.goal);
+      const out = wrapForTool(blueprint.buildPrompt, blueprint, tool);
+      expect(out).toContain(blueprint.buildPrompt);
+      expect(out).toContain(blueprint.goal);
       expect(out).toContain("BUILD INSTRUCTIONS");
     }
   });
 
   it("applies tool-specific framing", () => {
-    expect(wrapForTool(brief.buildPrompt, brief, "codex")).toContain("Codex");
-    expect(wrapForTool(brief.buildPrompt, brief, "claude")).toContain("Claude");
-    expect(wrapForTool(brief.buildPrompt, brief, "cursor")).toContain("Cursor");
+    expect(wrapForTool(blueprint.buildPrompt, blueprint, "codex")).toContain("Codex");
+    expect(wrapForTool(blueprint.buildPrompt, blueprint, "claude")).toContain("Claude");
+    expect(wrapForTool(blueprint.buildPrompt, blueprint, "cursor")).toContain("Cursor");
   });
 
   it("includes the validation checklist as definition of done", () => {
-    const out = wrapForTool(brief.buildPrompt, brief, "generic");
+    const out = wrapForTool(blueprint.buildPrompt, blueprint, "generic");
     expect(out).toContain("DEFINITION OF DONE");
-    expect(out).toContain("the brief generates");
+    expect(out).toContain("the blueprint generates");
   });
 });
 
-describe("buildBriefMarkdown", () => {
+describe("buildBlueprintMarkdown", () => {
   it("renders all sections with their content", () => {
-    const md = buildBriefMarkdown(brief);
-    expect(md).toContain(`# ${brief.goal}`);
+    const md = buildBlueprintMarkdown(blueprint);
+    expect(md).toContain(`# ${blueprint.goal}`);
     expect(md).toContain("## MVP Features");
     expect(md).toContain("- create a project");
     expect(md).toContain("## Non-Goals");
@@ -57,7 +57,7 @@ describe("buildBriefMarkdown", () => {
   });
 
   it("shows a placeholder for empty lists", () => {
-    const md = buildBriefMarkdown({ ...brief, nonGoals: [] });
+    const md = buildBlueprintMarkdown({ ...blueprint, nonGoals: [] });
     expect(md).toContain("_None specified._");
   });
 });

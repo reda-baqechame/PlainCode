@@ -13,6 +13,7 @@ import {
 } from "@/lib/utils/history";
 import { decodeDocumentShare } from "@/lib/utils/share";
 import { Loader2, FileText, Lock, Code2, Github, History, X, FolderGit2 } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { cn } from "@/lib/utils/cn";
 
 type SourceMode = "paste" | "repo";
@@ -166,13 +167,11 @@ export default function DocumentPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Input */}
         <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Document Your Code</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Paste a snippet or point at a whole GitHub repo — get polished, README-ready
-              documentation with three visual diagrams, an API reference, and one-click export.
-            </p>
-          </div>
+          <PageHeader
+            toolId="document"
+            title="Document Your Code"
+            subtitle="Paste a snippet or point at a whole GitHub repo — get polished, README-ready documentation with three visual diagrams, an API reference, and one-click export."
+          />
 
           {/* Source toggle */}
           <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted/40" role="group" aria-label="Documentation source">

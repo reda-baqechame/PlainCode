@@ -5,6 +5,7 @@ import { AudienceDial } from "@/components/explain/AudienceDial";
 import { ExplanationPanel } from "@/components/output/ExplanationPanel";
 import { useExplain } from "@/hooks/useExplain";
 import { Loader2, GitCompare } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import type { AudienceLevel } from "@/types/explanation";
 
 export default function DiffPage() {
@@ -31,15 +32,11 @@ export default function DiffPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <GitCompare className="h-6 w-6 text-primary" />
-          Explain the Diff
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Paste the before and after versions — understand what changed, the blast radius on the rest of the system, and whether this is a proper fix or a workaround.
-        </p>
-      </div>
+      <PageHeader
+        toolId="diff"
+        title="Explain the Diff"
+        subtitle="Paste the before and after versions — understand what changed, the blast radius on the rest of the system, and whether this is a proper fix or a workaround."
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <CodeInput value={codeBefore} onChange={setCodeBefore} label="Before" />

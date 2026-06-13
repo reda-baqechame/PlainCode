@@ -1,7 +1,7 @@
 import { getAnthropicClient } from "@/lib/ai/client";
-import type { AnalyzeResult, BriefInput, ClarifyingQuestion } from "@/types/brief";
+import type { AnalyzeResult, BlueprintInput, ClarifyingQuestion } from "@/types/blueprint";
 
-// Context Analyzer + Clarifying-Question Generator for Brief mode.
+// Context Analyzer + Clarifying-Question Generator for Blueprint mode.
 // Mirrors the two-step (Haiku analyze -> Sonnet generate) shape used in
 // src/app/api/defend/route.ts.
 
@@ -22,7 +22,7 @@ interface ContextAnalysis {
 }
 
 /** Build the input block once so both calls see the same framing. */
-function inputBlock(input: BriefInput): string {
+function inputBlock(input: BlueprintInput): string {
   return [
     `Project name: ${input.name || "(unnamed)"}`,
     `Raw idea: ${input.rawIdea}`,
@@ -35,7 +35,7 @@ function inputBlock(input: BriefInput): string {
 }
 
 /** Layer 1: read the messy idea and map what we know vs. what's missing. */
-async function analyzeContext(input: BriefInput): Promise<ContextAnalysis> {
+async function analyzeContext(input: BlueprintInput): Promise<ContextAnalysis> {
   const client = getAnthropicClient();
   const res = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -72,9 +72,9 @@ Return this exact shape:
   }
 }
 
-/** Layer 2: ask the fewest questions that prevent a bad brief. */
+/** Layer 2: ask the fewest questions that prevent a bad blueprint. */
 async function generateQuestions(
-  input: BriefInput,
+  input: BlueprintInput,
   analysis: ContextAnalysis
 ): Promise<ClarifyingQuestion[]> {
   const client = getAnthropicClient();
@@ -84,7 +84,7 @@ async function generateQuestions(
     messages: [
       {
         role: "user",
-        content: `You are a product strategist preparing to write a build brief for an AI coding agent. Generate exactly 5 clarifying questions — one per category — that are the fewest questions required to prevent a bad output.
+        content: `You are a product strategist preparing to write a build blueprint for an AI coding agent. Generate exactly 5 clarifying questions — one per category — that are the fewest questions required to prevent a bad output.
 
 THE IDEA:
 ${inputBlock(input)}
@@ -123,7 +123,7 @@ Return ONLY valid JSON, no markdown:
 }
 
 /** Full analyze step: context map + 5 clarifying questions. */
-export async function analyzeBrief(input: BriefInput): Promise<AnalyzeResult> {
+export async function analyzeBlueprint(input: BlueprintInput): Promise<AnalyzeResult> {
   const analysis = await analyzeContext(input);
   const questions = await generateQuestions(input, analysis);
   return {

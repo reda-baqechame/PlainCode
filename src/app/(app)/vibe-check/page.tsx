@@ -39,6 +39,7 @@ import type { CheckResult, SystemsAnalysis as SystemsAnalysisData } from "@/app/
 import { saveShipHistory, getShipHistory, type ShipHistoryEntry } from "@/lib/utils/history";
 import { exportShipCheckMarkdown } from "@/lib/utils/export-markdown";
 import { encodeShareResult, decodeShipShare, buildShareUrl } from "@/lib/utils/share";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 type Phase = "input" | "fetching" | "analyzing" | "results";
 
@@ -546,17 +547,11 @@ export default function ShipCheckPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 space-y-8">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Zap className="h-6 w-6 text-yellow-500" />
-          Ship Check
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          14 automated checks on any public GitHub repo — plus a systems stress
-          test. Get a Ship Score out of 100, find out exactly what breaks first
-          at scale, and know where you stand before going live.
-        </p>
-      </div>
+      <PageHeader
+        toolId="vibe-check"
+        title="Ship Check"
+        subtitle="14 automated checks on any public GitHub repo — plus a systems stress test. Get a Ship Score out of 100, find out exactly what breaks first at scale, and know where you stand before going live."
+      />
 
       {/* Error banner */}
       {error && (

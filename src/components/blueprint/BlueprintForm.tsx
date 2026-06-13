@@ -1,16 +1,16 @@
 "use client";
 import { Wand2, ChevronRight } from "lucide-react";
-import type { BriefInput } from "@/types/brief";
+import type { BlueprintInput } from "@/types/blueprint";
 
 interface Props {
-  value: BriefInput;
-  onChange: (value: BriefInput) => void;
+  value: BlueprintInput;
+  onChange: (value: BlueprintInput) => void;
   onSubmit: () => void;
   disabled?: boolean;
 }
 
-export function BriefForm({ value, onChange, onSubmit, disabled }: Props) {
-  const set = (patch: Partial<BriefInput>) => onChange({ ...value, ...patch });
+export function BlueprintForm({ value, onChange, onSubmit, disabled }: Props) {
+  const set = (patch: Partial<BlueprintInput>) => onChange({ ...value, ...patch });
   const canSubmit = value.rawIdea.trim().length >= 10;
 
   return (
