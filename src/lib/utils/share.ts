@@ -1,5 +1,6 @@
 import type { CheckResult } from "@/app/api/vibe-check/route";
 import type { DocumentResult } from "@/types/explanation";
+import type { BriefResult } from "@/types/brief";
 
 export interface ShipShareData {
   repoUrl: string;
@@ -77,4 +78,30 @@ export function decodeDocumentShare(encoded: string): DocumentShareData | null {
 // length limits the way a query string is.
 export function buildDocumentShareUrl(origin: string, encoded: string): string {
   return `${origin}/document#d=${encoded}`;
+}
+
+export interface BriefShareData {
+  result: BriefResult;
+}
+
+export function encodeBriefShare(data: BriefShareData): string {
+  try {
+    return btoa(encodeURIComponent(JSON.stringify(data)));
+  } catch {
+    return "";
+  }
+}
+
+export function decodeBriefShare(encoded: string): BriefShareData | null {
+  try {
+    return JSON.parse(decodeURIComponent(atob(encoded))) as BriefShareData;
+  } catch {
+    return null;
+  }
+}
+
+// Brief payloads are large (full brief + five prompt variants), so they ride in
+// the URL hash fragment — same reasoning as document share links above.
+export function buildBriefShareUrl(origin: string, encoded: string): string {
+  return `${origin}/brief#b=${encoded}`;
 }

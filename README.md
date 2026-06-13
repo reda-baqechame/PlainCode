@@ -12,6 +12,7 @@ PlainCode has these modes:
 
 | Mode | What it does |
 |------|-------------|
+| **Brief** | Describe a vague idea — get a build-ready execution brief plus a ready-to-paste prompt for Codex, Claude, ChatGPT, Cursor, or any AI agent |
 | **Explain** | Paste code, pick your audience, get a structured plain-English explanation |
 | **Document** | Paste a snippet or point at a repo — get README-ready docs with three diagrams, an API reference, and one-click export |
 | **Diff** | Compare two versions of code and understand what changed and why |
@@ -21,6 +22,26 @@ PlainCode has these modes:
 ---
 
 ## Features
+
+### Brief Mode *(new)*
+
+The pre-code stage: turn a half-formed idea into a precise, build-ready brief for any AI coding agent. Most people don't fail with AI because the model is weak — they fail because they give it incomplete context. Brief is the missing layer that fixes that.
+
+**How it works:**
+1. Describe what you're trying to build (messy is fine), who it's for, and the problem it solves — paste any extra notes
+2. A 3-layer AI pipeline reads the idea, maps what's clear vs. missing, and asks **5 clarifying questions** — the fewest needed to prevent a bad output
+3. Answer what you can (blanks are allowed)
+4. Get a structured **execution brief**: goal, target user, core promise, MVP features, non-goals, user flow, technical requirements, build tickets, and a validation checklist
+5. Copy a **tailored build prompt** for Codex, Claude, ChatGPT, Cursor, or any agent — each framed for that tool
+
+**Export & persistence:**
+- **Copy as Markdown** (brief + all five prompt variants) · **Copy link** — a self-contained URL that rehydrates the brief
+- **Follow-up Q&A** grounded in your brief
+- **Recent briefs** — last 5 kept locally so you can reopen them instantly
+
+Built on the same Claude pipeline as every other mode. No new API keys, no database, no sign-up — fully stateless on the server; history and shares live in your browser.
+
+---
 
 ### Document Mode *(new)*
 
@@ -250,6 +271,8 @@ The app uses Next.js standalone output mode for containerized deployments (Railw
 
 | Method | Path | Description |
 |--------|------|-------------|
+| `POST` | `/api/brief/analyze` | Analyze a vague idea and generate 5 clarifying questions |
+| `POST` | `/api/brief/compile` | Compile the idea + answers into a brief and universal prompts |
 | `POST` | `/api/explain` | Explain a code snippet (SSE stream) |
 | `POST` | `/api/explain-diff` | Explain changes between two code versions (SSE stream) |
 | `POST` | `/api/document` | Generate full documentation — 12 sections incl. 3 diagrams (SSE stream) |

@@ -15,12 +15,29 @@ import {
   Database,
   AlertTriangle,
   FileText,
+  Wand2,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { DemoShipCheck } from "@/components/DemoShipCheck";
 
 /* ─── Tool cards ─────────────────────────────────────────────────────────── */
 const tools = [
+  {
+    icon: <Wand2 className="h-6 w-6 text-purple-500" />,
+    accent: "border-purple-500",
+    name: "Brief",
+    badge: "Before you build",
+    badgeColor: "bg-purple-500/10 text-purple-500",
+    href: "/brief",
+    what: "Describe your idea badly — even one messy paragraph. Brief asks 5 sharp questions, then compiles a build-ready execution brief plus a ready-to-paste prompt for Codex, Claude, ChatGPT, Cursor, or any AI agent.",
+    steps: [
+      "Dump your idea, who it's for, and the problem it solves",
+      "Answer 5 clarifying questions the AI asks back",
+      "Copy the brief and a tailored prompt straight into your AI tool",
+    ],
+    cta: "Write a Brief",
+    ctaClass: "bg-purple-500 hover:bg-purple-600 text-white",
+  },
   {
     icon: <Sparkles className="h-6 w-6 text-blue-500" />,
     accent: "border-blue-500",
@@ -174,6 +191,9 @@ export default function LandingPage() {
             PlainCode
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/brief" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Brief
+            </Link>
             <Link href="/explain" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Explain
             </Link>
@@ -208,8 +228,8 @@ export default function LandingPage() {
           <span className="text-primary">Systems survive.</span>
         </h1>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          PlainCode helps you close the gap. Four tools that push you to think one level deeper —
-          from code to system, from working to production-grade, from shipped to owned.
+          PlainCode helps you close the gap — from a vague idea to a build-ready brief, and from working
+          code to a production-grade system you can explain, defend, and ship.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
           <Link
@@ -266,7 +286,7 @@ export default function LandingPage() {
       {/* ── Tools ── */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-10">
-          <h2 className="text-2xl font-bold text-foreground">Four ways to think in systems</h2>
+          <h2 className="text-2xl font-bold text-foreground">From idea to shipped system</h2>
           <p className="text-sm text-muted-foreground mt-2">Pick the one that fits what you need right now.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

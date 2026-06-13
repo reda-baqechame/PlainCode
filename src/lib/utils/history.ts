@@ -1,8 +1,10 @@
 import type { DocumentResult } from "@/types/explanation";
+import type { BriefResult } from "@/types/brief";
 
 const SHIP_KEY = "plaincode_ship_history";
 const DEFEND_KEY = "plaincode_defend_history";
 const DOCUMENT_KEY = "plaincode_document_history";
+const BRIEF_KEY = "plaincode_brief_history";
 const MAX = 5;
 
 export interface ShipHistoryEntry {
@@ -89,4 +91,26 @@ export function getDocumentHistory(): DocumentHistoryEntry[] {
 export function deleteDocumentHistory(id: string): void {
   const list = readList<DocumentHistoryEntry>(DOCUMENT_KEY).filter((e) => e.id !== id);
   writeList(DOCUMENT_KEY, list);
+}
+
+export interface BriefHistoryEntry {
+  id: string;
+  name: string;
+  goal: string;
+  date: string;
+  result: BriefResult;
+}
+
+export function saveBriefHistory(entry: BriefHistoryEntry): void {
+  const list = readList<BriefHistoryEntry>(BRIEF_KEY).filter((e) => e.id !== entry.id);
+  writeList(BRIEF_KEY, [entry, ...list]);
+}
+
+export function getBriefHistory(): BriefHistoryEntry[] {
+  return readList<BriefHistoryEntry>(BRIEF_KEY);
+}
+
+export function deleteBriefHistory(id: string): void {
+  const list = readList<BriefHistoryEntry>(BRIEF_KEY).filter((e) => e.id !== id);
+  writeList(BRIEF_KEY, list);
 }

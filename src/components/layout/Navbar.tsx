@@ -14,6 +14,12 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <Link
+            href="/brief"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-md hover:bg-accent"
+          >
+            Brief
+          </Link>
+          <Link
             href="/explain"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-md hover:bg-accent"
           >
