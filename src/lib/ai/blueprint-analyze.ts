@@ -11,7 +11,11 @@ function parseClaudeJSON<T>(text: string): T {
     .replace(/^```(?:json)?\s*/m, "")
     .replace(/\s*```\s*$/m, "")
     .trim();
-  return JSON.parse(cleaned) as T;
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    throw new Error("The model returned an incomplete response. Please try again.");
+  }
 }
 
 interface ContextAnalysis {

@@ -17,7 +17,12 @@ function parseClaudeJSON<T>(text: string): T {
     .replace(/^```(?:json)?\s*/m, "")
     .replace(/\s*```\s*$/m, "")
     .trim();
-  return JSON.parse(cleaned) as T;
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    // Most often a truncated response (hit max_tokens) producing invalid JSON.
+    throw new Error("The model returned an incomplete response. Please try again.");
+  }
 }
 
 /** Everything Sonnet returns — BlueprintResult minus the derived markdown/prompts. */
@@ -158,7 +163,7 @@ async function compile(input: BlueprintInput, answers: AnsweredQuestion[]): Prom
   const client = getAnthropicClient();
   const res = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 2500,
+    max_tokens: 4000,
     messages: [
       {
         role: "user",

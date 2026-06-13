@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     const result = await compileBlueprint(parsed.data.input, parsed.data.answers);
     return NextResponse.json(result);
   } catch (err) {
+    console.error("[blueprint/compile]", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to compile blueprint" },
       { status: 500 }

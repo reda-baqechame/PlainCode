@@ -57,7 +57,9 @@ describe("buildBlueprintMarkdown", () => {
   });
 
   it("shows a placeholder for empty lists", () => {
-    const md = buildBlueprintMarkdown({ ...blueprint, nonGoals: [] });
+    const md = buildBlueprintMarkdown({ ...blueprint, nonGoals: [], mvpFeatures: [] });
     expect(md).toContain("_None specified._");
+    // Header still renders even with no features.
+    expect(md).toContain("## MVP Features");
   });
 });

@@ -129,8 +129,8 @@ export function FollowUpQA({
                 className={cn(
                   "rounded-lg px-3 py-2 text-sm",
                   msg.role === "user"
-                    ? "bg-primary text-primary-foreground ml-8"
-                    : "bg-muted text-foreground mr-8"
+                    ? "bg-primary text-primary-foreground ml-6 sm:ml-12"
+                    : "bg-muted text-foreground mr-6 sm:mr-12"
                 )}
               >
                 {msg.content || <span className="animate-pulse">●</span>}

@@ -66,6 +66,8 @@ export default function BlueprintPage() {
       if (decoded?.result) {
         setResult(decoded.result);
         setPhase("results");
+      } else {
+        setError("This shared link is invalid or corrupted.");
       }
     }
   }, []);
@@ -162,8 +164,11 @@ export default function BlueprintPage() {
 
       {/* Error banner */}
       {error && (
-        <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
-          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+        <div
+          role="alert"
+          className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3"
+        >
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden />
           {error}
         </div>
       )}
@@ -198,8 +203,12 @@ export default function BlueprintPage() {
 
       {/* ── Phase: analyzing ── */}
       {phase === "analyzing" && (
-        <div className="rounded-lg border border-border bg-card p-8 flex flex-col items-center gap-4 text-center">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <div
+          aria-busy="true"
+          aria-live="polite"
+          className="rounded-lg border border-border bg-card p-8 flex flex-col items-center gap-4 text-center"
+        >
+          <Loader2 className="h-8 w-8 text-primary animate-spin" aria-hidden />
           <div>
             <p className="text-sm font-medium text-foreground">Reading your idea</p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -222,8 +231,12 @@ export default function BlueprintPage() {
 
       {/* ── Phase: compiling ── */}
       {phase === "compiling" && (
-        <div className="rounded-lg border border-border bg-card p-8 flex flex-col items-center gap-4 text-center">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <div
+          aria-busy="true"
+          aria-live="polite"
+          className="rounded-lg border border-border bg-card p-8 flex flex-col items-center gap-4 text-center"
+        >
+          <Loader2 className="h-8 w-8 text-primary animate-spin" aria-hidden />
           <div>
             <p className="text-sm font-medium text-foreground">Compiling your blueprint</p>
             <p className="text-xs text-muted-foreground mt-1">

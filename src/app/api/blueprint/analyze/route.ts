@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     const result = await analyzeBlueprint(parsed.data);
     return NextResponse.json(result);
   } catch (err) {
+    console.error("[blueprint/analyze]", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to analyze idea" },
       { status: 500 }

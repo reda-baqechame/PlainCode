@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { STAGES, TOOLS, toolsByStage, BUILD_STAGE_ICON } from "@/constants/tools";
+import { STAGES, TOOLS, toolsByStage, BUILD_STAGE_ICON, type StageId } from "@/constants/tools";
 
 /* ── Pipeline (how the AI works) ─────────────────────────────────────────── */
 const pipeline = [
@@ -78,14 +78,14 @@ const features = [
 ];
 
 /* ── Stage → arc step ────────────────────────────────────────────────────── */
-function StageStep({ stageId, label, blurb }: { stageId: string; label: string; blurb: string }) {
-  const tools = toolsByStage(stageId as never);
+function StageStep({ stageId, label, blurb }: { stageId: StageId; label: string; blurb: string }) {
+  const tools = toolsByStage(stageId);
   const isBuild = stageId === "build";
   const Icon = isBuild ? BUILD_STAGE_ICON : tools[0]?.Icon ?? Sparkles;
   const accentText = isBuild ? "text-muted-foreground" : tools[0]?.accent.text ?? "text-primary";
 
   return (
-    <div className="relative flex-1 min-w-[150px]">
+    <div className="relative flex-1 md:min-w-[150px]">
       <div className="rounded-xl border border-border bg-card p-4 h-full shadow-card card-hover">
         <div className="flex items-center gap-2">
           <span className={`flex h-8 w-8 items-center justify-center rounded-lg bg-muted ${accentText}`}>
