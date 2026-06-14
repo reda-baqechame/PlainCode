@@ -133,14 +133,14 @@ export const TOOLS: Tool[] = [
     href: "/polish",
     Icon: Palette,
     accent: ACCENTS.fuchsia,
-    badge: "Beats Figma",
-    tagline: "App → real design, no slop",
+    badge: "Production-grade",
+    tagline: "App → production-grade UI",
     blurb:
-      "Describe your app or drop a screenshot of your current ugly UI. Polish critiques the AI-slop tells, gives you 3 real design directions, then generates an actual rendered design — beautiful screens in real code — plus the design system (DESIGN.md + tokens) and prompts to keep your AI on-brand.",
+      "Describe your app or drop a screenshot. Polish designs one flagship screen, then critiques its own rendered result with vision and fixes what looks AI — production-grade UI you can actually ship, plus the design system (DESIGN.md + tokens) and prompts to build the rest on-brand.",
     steps: [
-      "Describe the app and drop a screenshot of the current UI",
+      "Describe the app (and optionally drop a screenshot of the current UI)",
       "Pick one of 3 distinct design directions the AI proposes",
-      "Get rendered screens, the design system, and apply-it prompts",
+      "Watch it draft, critique its own pixels, and refine — then ship the result",
     ],
   },
   {

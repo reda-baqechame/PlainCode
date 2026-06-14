@@ -10,7 +10,7 @@ const result: PolishResult = {
   colors: { light: c, dark: c },
   radius: "", spacingNote: "", motionNote: "", components: [], antiSlopChecklist: [],
   designMd: "", tokens: { tailwind: "", css: "", json: "" },
-  prompts: { codex: "", claude: "", chatgpt: "", cursor: "", generic: "" }, screens: [],
+  prompts: { codex: "", claude: "", chatgpt: "", cursor: "", generic: "" }, screens: [], critiqueTrail: [],
 };
 
 function entry(id: string): PolishHistoryEntry {

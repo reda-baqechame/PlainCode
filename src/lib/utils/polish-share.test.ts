@@ -27,6 +27,10 @@ const result: PolishResult = {
   tokens: { tailwind: "@theme {}", css: ":root {}", json: "{}" },
   prompts: { codex: "CODEX", claude: "CLAUDE", chatgpt: "CHATGPT", cursor: "CURSOR", generic: "GENERIC" },
   screens: [{ name: "Landing", html: "<section>hi</section>" }],
+  critiqueTrail: [
+    { score: 62, looksAI: true, issues: [], verdict: "cramped" },
+    { score: 89, looksAI: false, issues: [], verdict: "sharp" },
+  ],
 };
 
 describe("polish share encode/decode", () => {
@@ -47,10 +51,12 @@ describe("polish share encode/decode", () => {
 });
 
 describe("exportPolishMarkdown", () => {
-  it("includes the DESIGN.md, tokens, screens, and prompts", () => {
+  it("includes the DESIGN.md, tokens, quality passes, screens, and prompts", () => {
     const md = exportPolishMarkdown(result);
     expect(md).toContain("# DESIGN.md");
     expect(md).toContain("## Design Tokens");
+    expect(md).toContain("## Quality passes");
+    expect(md).toContain("Pass 2: 89/100");
     expect(md).toContain("## Rendered Screens");
     expect(md).toContain("### Landing");
     expect(md).toContain("CODEX");

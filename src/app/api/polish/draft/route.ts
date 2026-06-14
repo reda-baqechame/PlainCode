@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { renderScreens } from "@/lib/ai/polish-render";
+import { draftScreen } from "@/lib/ai/polish-draft";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import type { DesignSystem } from "@/types/polish";
 
@@ -12,7 +12,6 @@ const inputSchema = z.object({
   currentCode: z.string().max(15000).optional().default(""),
 });
 
-// Only the fields renderScreens reads; the rest of the system rides along.
 const systemSchema = z
   .object({
     direction: z.string().max(200),
@@ -24,11 +23,15 @@ const systemSchema = z
       bodyFont: z.string().max(120),
       monoFont: z.string().max(120),
     }),
-    tokens: z.object({ css: z.string().max(20000) }).optional(),
   })
   .passthrough();
 
-const schema = z.object({ input: inputSchema, system: systemSchema });
+const schema = z.object({
+  input: inputSchema,
+  system: systemSchema,
+  direction: z.string().min(1).max(200),
+  exemplarHtml: z.string().max(40000).optional(),
+});
 
 export async function POST(req: NextRequest) {
   const limited = enforceRateLimit(req, "polish", 15);
@@ -41,12 +44,17 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const screens = await renderScreens(parsed.data.input, parsed.data.system as unknown as DesignSystem);
-    return NextResponse.json({ screens });
+    const screen = await draftScreen(
+      parsed.data.input,
+      parsed.data.system as unknown as DesignSystem,
+      parsed.data.direction,
+      parsed.data.exemplarHtml
+    );
+    return NextResponse.json({ screen });
   } catch (err) {
-    console.error("[polish/render]", err);
+    console.error("[polish/draft]", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to render designs" },
+      { error: err instanceof Error ? err.message : "Failed to draft screen" },
       { status: 500 }
     );
   }

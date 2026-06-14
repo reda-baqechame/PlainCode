@@ -473,6 +473,14 @@ export function exportPolishMarkdown(result: PolishResult): string {
   lines.push(`### CSS Variables`, ``, "```css", result.tokens.css.trim(), "```", ``);
   lines.push(`### JSON`, ``, "```json", result.tokens.json.trim(), "```", ``);
 
+  if (result.critiqueTrail?.length) {
+    lines.push(`## Quality passes`, ``);
+    result.critiqueTrail.forEach((c, i) => {
+      lines.push(`- **Pass ${i + 1}: ${c.score}/100** — ${c.verdict}`);
+    });
+    lines.push(``);
+  }
+
   if (result.screens.length) {
     lines.push(`## Rendered Screens`, ``);
     for (const s of result.screens) {

@@ -1,30 +1,29 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Loader2, AlertCircle, RotateCcw, FileText, Check, Link2, Wand2 } from "lucide-react";
+import { Loader2, AlertCircle, RotateCcw, FileText, Check, Link2, Plus } from "lucide-react";
 import type {
   DesignAnalysis,
+  DesignCritique,
   DesignScreen,
   DesignSystem,
   PolishInput,
   PolishResult,
 } from "@/types/polish";
-import {
-  savePolishHistory,
-  getPolishHistory,
-  type PolishHistoryEntry,
-} from "@/lib/utils/history";
+import { savePolishHistory, getPolishHistory, type PolishHistoryEntry } from "@/lib/utils/history";
 import { exportPolishMarkdown } from "@/lib/utils/export-markdown";
 import { encodePolishShare, decodePolishShare, buildPolishShareUrl } from "@/lib/utils/share";
+import { captureHtml, googleFontsHref } from "@/lib/utils/capture";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PolishForm } from "@/components/polish/PolishForm";
 import { DirectionPicker } from "@/components/polish/DirectionPicker";
 import { DesignCanvas } from "@/components/polish/DesignCanvas";
 import { DesignSystemPanel } from "@/components/polish/DesignSystemPanel";
 import { TokenCodeTabs } from "@/components/polish/TokenCodeTabs";
+import { RefineLog, type RefineEntry } from "@/components/polish/RefineLog";
 import { UniversalPromptTabs } from "@/components/blueprint/UniversalPromptTabs";
 import { FollowUpQA } from "@/components/FollowUpQA";
 
-type Phase = "input" | "analyzing" | "directions" | "compiling" | "designing" | "results";
+type Phase = "input" | "analyzing" | "directions" | "designing" | "results";
 
 const EMPTY_INPUT: PolishInput = {
   name: "",
@@ -34,6 +33,8 @@ const EMPTY_INPUT: PolishInput = {
   currentCode: "",
   screenshot: undefined,
 };
+const MAX_PASSES = 2;
+const GOOD_SCORE = 85;
 
 /** POST JSON with a hard timeout so a slow/hung request can't spin forever. */
 async function postJson(url: string, body: unknown, timeoutMs: number): Promise<Response> {
@@ -63,10 +64,10 @@ export default function PolishPage() {
   const [result, setResult] = useState<PolishResult | null>(null);
   const [error, setError] = useState("");
   const [history, setHistory] = useState<PolishHistoryEntry[]>([]);
+  const [log, setLog] = useState<RefineEntry[]>([]);
   const [copiedMd, setCopiedMd] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [refine, setRefine] = useState("");
-  const [refining, setRefining] = useState(false);
+  const [addingScreen, setAddingScreen] = useState(false);
 
   useEffect(() => setHistory(getPolishHistory()), []);
 
@@ -106,41 +107,106 @@ export default function PolishPage() {
 
   async function handlePick(direction: string) {
     setError("");
-    setPhase("compiling");
+    setLog([]);
+    setPhase("designing");
+
+    // Mutable log we re-render after each step.
+    const entries: RefineEntry[] = [];
+    const begin = (label: string) => {
+      entries.forEach((e) => (e.status = "done"));
+      entries.push({ label, status: "active" });
+      setLog([...entries]);
+    };
+    const mark = (label: string, score: number) => {
+      entries.forEach((e) => (e.status = "done"));
+      entries.push({ label, status: "done", score });
+      setLog([...entries]);
+    };
+    const finish = () => {
+      entries.forEach((e) => (e.status = "done"));
+      setLog([...entries]);
+    };
+
     try {
+      begin("Building the design system");
       const cRes = await postJson(
         "/api/polish/compile",
         { input: { ...input, screenshot: undefined }, direction },
         120000
       );
-      const system = await cRes.json();
+      const system = (await cRes.json()) as DesignSystem & { error?: string };
       if (!cRes.ok) {
         setError(system.error ?? "Failed to compile design system");
         setPhase("directions");
         return;
       }
-      setPhase("designing");
-      const screens = await requestScreens(system as DesignSystem, input);
-      finishResult(system as DesignSystem, screens);
+
+      const { screen, critiques } = await runDesignLoop(system, input, undefined, { begin, mark });
+      finish();
+      finishResult(system, [screen], critiques);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Connection error. Please try again.");
       setPhase("directions");
     }
   }
 
-  async function requestScreens(system: DesignSystem, forInput: PolishInput): Promise<DesignScreen[]> {
-    const rRes = await postJson(
-      "/api/polish/render",
-      { input: { ...forInput, screenshot: undefined }, system },
-      150000
+  /** draft → (render → critique → revise) up to MAX_PASSES. Degrades gracefully. */
+  async function runDesignLoop(
+    system: DesignSystem,
+    forInput: PolishInput,
+    exemplarHtml: string | undefined,
+    log: { begin: (l: string) => void; mark: (l: string, s: number) => void }
+  ): Promise<{ screen: DesignScreen; critiques: DesignCritique[] }> {
+    const clean = { ...forInput, screenshot: undefined };
+    log.begin("Designing the flagship screen");
+    const dRes = await postJson(
+      "/api/polish/draft",
+      { input: clean, system, direction: system.direction, exemplarHtml },
+      120000
     );
-    const data = await rRes.json();
-    if (!rRes.ok) throw new Error(data.error ?? "Failed to render designs");
-    return data.screens as DesignScreen[];
+    const dData = await dRes.json();
+    if (!dRes.ok) throw new Error(dData.error ?? "Failed to draft screen");
+    let current = dData.screen as DesignScreen;
+    const critiques: DesignCritique[] = [];
+    const fontsHref = googleFontsHref(system.typography);
+
+    for (let pass = 0; pass < MAX_PASSES; pass++) {
+      log.begin("Rendering & screenshotting the result");
+      const image = await captureHtml(current.html, system.tokens.css, fontsHref);
+      if (!image) break; // capture unavailable — accept the current screen
+
+      log.begin("Critiquing the actual pixels");
+      const cRes = await postJson("/api/polish/critique", { input: clean, system, image }, 90000);
+      if (!cRes.ok) break;
+      const critique = (await cRes.json()) as DesignCritique;
+      critiques.push(critique);
+      log.mark(`Pass ${pass + 1} review`, critique.score);
+
+      const goodEnough = critique.score >= GOOD_SCORE || (!critique.looksAI && critique.issues.length === 0);
+      if (goodEnough || pass === MAX_PASSES - 1) break;
+
+      log.begin("Applying the design director's fixes");
+      const rRes = await postJson(
+        "/api/polish/revise",
+        { input: clean, system, current, critique },
+        120000
+      );
+      if (rRes.ok) {
+        const rData = await rRes.json();
+        if (rData.screen) current = rData.screen as DesignScreen;
+      }
+    }
+
+    return { screen: current, critiques };
   }
 
-  function finishResult(system: DesignSystem, screens: DesignScreen[]) {
-    const full: PolishResult = { ...system, name: input.name.trim() || input.productType.slice(0, 40), screens };
+  function finishResult(system: DesignSystem, screens: DesignScreen[], critiqueTrail: DesignCritique[]) {
+    const full: PolishResult = {
+      ...system,
+      name: input.name.trim() || input.productType.slice(0, 40),
+      screens,
+      critiqueTrail,
+    };
     setResult(full);
     const entry: PolishHistoryEntry = {
       id: `${Date.now()}`,
@@ -154,23 +220,29 @@ export default function PolishPage() {
     setPhase("results");
   }
 
-  async function handleRefine() {
-    if (!result || !refine.trim() || refining) return;
-    setRefining(true);
+  async function handleAnotherScreen() {
+    if (!result || addingScreen) return;
+    setAddingScreen(true);
+    setError("");
     try {
-      const refinedInput: PolishInput = {
-        ...input,
-        screenshot: undefined,
-        vibe: `${input.vibe} — Refinement: ${refine.trim()}`,
-      };
-      const screens = await requestScreens(result, refinedInput);
-      const updated: PolishResult = { ...result, screens };
+      const { screen } = await runDesignLoop(result, input, result.screens[0]?.html, {
+        begin: () => {},
+        mark: () => {},
+      });
+      const updated: PolishResult = { ...result, screens: [...result.screens, screen] };
       setResult(updated);
-      setRefine("");
-    } catch {
-      setError("Couldn't refine — please try again.");
+      savePolishHistory({
+        id: `${Date.now()}`,
+        name: updated.name,
+        direction: updated.direction,
+        date: new Date().toLocaleDateString(),
+        result: updated,
+      });
+      setHistory(getPolishHistory());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't generate another screen — please try again.");
     } finally {
-      setRefining(false);
+      setAddingScreen(false);
     }
   }
 
@@ -180,7 +252,7 @@ export default function PolishPage() {
     setAnalysis(null);
     setResult(null);
     setError("");
-    setRefine("");
+    setLog([]);
     if (typeof window !== "undefined" && window.location.hash) {
       window.history.replaceState(null, "", window.location.pathname);
     }
@@ -190,7 +262,7 @@ export default function PolishPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 space-y-8">
       <PageHeader
         toolId="polish"
-        subtitle="Describe your app or drop a screenshot of the current ugly UI. Get a real, rendered design — beautiful screens in actual code — plus the design system and prompts to keep your AI on-brand."
+        subtitle="Describe your app or drop a screenshot. Polish designs one flagship screen, then critiques its own rendered result with vision and fixes what looks AI — production-grade UI plus the design system to build the rest."
       />
 
       {error && (
@@ -229,30 +301,24 @@ export default function PolishPage() {
         </div>
       )}
 
-      {(phase === "analyzing" || phase === "compiling" || phase === "designing") && (
+      {phase === "analyzing" && (
         <div aria-busy="true" aria-live="polite" className="rounded-lg border border-border bg-card p-8 flex flex-col items-center gap-4 text-center">
           <Loader2 className="h-8 w-8 text-fuchsia-500 animate-spin" aria-hidden />
           <div>
-            <p className="text-sm font-medium text-foreground">
-              {phase === "analyzing" && "Studying your product"}
-              {phase === "compiling" && "Building the design system"}
-              {phase === "designing" && "Rendering your screens"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {phase === "analyzing" && "Reading the vibe and proposing 3 real directions…"}
-              {phase === "compiling" && "Choosing fonts, colors, and tokens — and killing the slop…"}
-              {phase === "designing" && "Generating beautiful, real screens in code — this can take up to a minute…"}
-            </p>
+            <p className="text-sm font-medium text-foreground">Studying your product</p>
+            <p className="text-xs text-muted-foreground mt-1">Reading the vibe and proposing 3 real directions…</p>
           </div>
         </div>
       )}
 
+      {phase === "designing" && (
+        <div aria-busy="true" aria-live="polite">
+          <RefineLog entries={log} />
+        </div>
+      )}
+
       {phase === "directions" && analysis && (
-        <DirectionPicker
-          analysis={analysis}
-          onPick={handlePick}
-          onBack={() => setPhase("input")}
-        />
+        <DirectionPicker analysis={analysis} onPick={handlePick} onBack={() => setPhase("input")} />
       )}
 
       {phase === "results" && result && (
@@ -260,31 +326,37 @@ export default function PolishPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <span className="font-semibold text-foreground">{result.direction}</span>
-              <span className="text-muted-foreground">— your design, rendered for real</span>
+              <span className="text-muted-foreground">— production-grade, rendered for real</span>
             </div>
             <DesignCanvas screens={result.screens} css={result.tokens.css} typography={result.typography} />
-          </div>
-
-          {/* Refine by intent */}
-          <div className="rounded-lg border border-border bg-card p-4 flex items-center gap-2">
-            <input
-              value={refine}
-              onChange={(e) => setRefine(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleRefine()}
-              placeholder="Refine: e.g. make it warmer, denser, more editorial…"
-              aria-label="Refine the design by intent"
-              disabled={refining}
-              className="flex-1 text-sm bg-background border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
-            />
             <button
-              onClick={handleRefine}
-              disabled={!refine.trim() || refining}
-              className="flex items-center gap-1.5 text-sm font-medium bg-fuchsia-500 text-white px-3.5 py-2 rounded-md hover:bg-fuchsia-600 transition-colors disabled:opacity-50"
+              onClick={handleAnotherScreen}
+              disabled={addingScreen}
+              className="w-full flex items-center justify-center gap-2 border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors rounded-lg py-2.5 disabled:opacity-50"
             >
-              {refining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-              Refine
+              {addingScreen ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {addingScreen ? "Designing another screen…" : "Generate another screen in this style"}
             </button>
           </div>
+
+          {result.critiqueTrail?.length > 0 && (
+            <div className="rounded-lg border border-border bg-card p-5 space-y-2">
+              <h2 className="text-sm font-semibold text-foreground">How it was refined</h2>
+              <p className="text-xs text-muted-foreground">
+                Polish screenshotted its own output and critiqued the real pixels, then fixed what looked generic.
+              </p>
+              <ol className="space-y-1.5 pt-1">
+                {result.critiqueTrail.map((c, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    <span className="text-xs font-semibold text-fuchsia-500 mt-0.5">Pass {i + 1}</span>
+                    <span className="text-foreground/85">
+                      <span className="font-medium">{c.score}/100</span> — {c.verdict}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
 
           <div className="space-y-2">
             <h2 className="text-sm font-semibold text-foreground">The design system</h2>

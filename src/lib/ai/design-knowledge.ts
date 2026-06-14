@@ -51,6 +51,18 @@ Fraunces + Inter Tight · Instrument Serif + Geist · Space Grotesk + Inter · B
 Sora + Inter · General Sans + Geist · Libre Franklin + Newsreader · IBM Plex Sans + IBM Plex Mono ·
 Clash Display + Satoshi · Manrope + Fraunces. Prefer a distinctive DISPLAY face + a clean BODY face.`;
 
+/** The strict bar a senior design director scores against. Used by draft,
+ *  critique, and revise so the standard is identical across the loop. */
+export const DESIGN_RUBRIC = `DESIGN RUBRIC — score each 0–10, then an overall 0–100:
+1. Typographic hierarchy: a real scale, distinct weights/sizes, tight tracking on large display; clear focal point.
+2. Spacing & density: an 8px rhythm; intentional dense vs. breathing areas — NOT uniform 16px everywhere.
+3. Color: restrained and purposeful; tinted (not pure-gray) neutrals; AA contrast (4.5:1 text, 3:1 UI); accent used sparingly.
+4. Alignment & grid: everything sits on a grid; consistent gutters; nothing optically off.
+5. Component craft: buttons/inputs/cards have real states, considered borders/shadows/radii — not flat defaults.
+6. Motion & detail: purposeful, restrained; real iconography (inline SVG, never emoji); polished edges.
+7. The AI test: does it look like a generic AI/template (centered hero + 3 equal cards, default violet, Inter-everything, gradient blobs)? If yes, it FAILS regardless of the above.
+A screen that would impress a senior product designer scores 85+. Generic-but-clean is ~60. Template slop is <50.`;
+
 /** Compact bundle for prompts that need all of it. */
 export const DESIGN_SYSTEM_BRIEF = `${AI_SLOP_MARKERS}
 
