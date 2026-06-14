@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeScreenHtml } from "./polish-render";
+import { sanitizeScreenHtml, parseScreens } from "./polish-render";
 import { imageBlockFromDataUrl } from "./polish-analyze";
 
 describe("sanitizeScreenHtml", () => {
@@ -17,9 +17,34 @@ describe("sanitizeScreenHtml", () => {
     const out = sanitizeScreenHtml(`<a href="javascript:evil()">x</a>`);
     expect(out).not.toContain("javascript:");
   });
-  it("keeps <style> and normal markup", () => {
-    const html = `<style>.a{color:var(--primary)}</style><section class="a">Hi</section>`;
-    expect(sanitizeScreenHtml(html)).toBe(html);
+  it("strips document wrappers but keeps the inner style + markup", () => {
+    const out = sanitizeScreenHtml(`<!doctype html><html><head><style>.a{color:var(--primary)}</style></head><body><section class="a">Hi</section></body></html>`);
+    expect(out).not.toMatch(/<\/?(html|head|body)/i);
+    expect(out).not.toMatch(/doctype/i);
+    expect(out).toContain("<style>.a{color:var(--primary)}</style>");
+    expect(out).toContain('<section class="a">Hi</section>');
+  });
+});
+
+describe("parseScreens", () => {
+  const text = `<<<SCREEN: Landing>>>
+<style>.l{color:var(--primary)}</style><section class="l">Hero</section>
+<<<SCREEN: Dashboard>>>
+<style>.d{}</style><section class="d">Board</section>
+<<<END>>>`;
+  it("parses each delimited screen with its name and html", () => {
+    const screens = parseScreens(text);
+    expect(screens.map((s) => s.name)).toEqual(["Landing", "Dashboard"]);
+    expect(screens[0].html).toContain("Hero");
+    expect(screens[1].html).toContain("Board");
+  });
+  it("drops a truncated trailing screen with no real markup", () => {
+    const truncated = `<<<SCREEN: Landing>>>
+<style>.l{}</style><section>Hero</section>
+<<<SCREEN: Dashboard>>>
+<styl`;
+    const screens = parseScreens(truncated);
+    expect(screens.map((s) => s.name)).toEqual(["Landing"]);
   });
 });
 

@@ -3,71 +3,81 @@ import { DESIGN_PRINCIPLES } from "@/lib/ai/design-knowledge";
 import type { DesignScreen, DesignSystem, PolishInput } from "@/types/polish";
 
 // Polish renderer: Sonnet generates real, beautiful screens as self-contained
-// HTML that consumes the design-system CSS variables. Output is sanitized
-// (scripts/handlers stripped) and rendered in a sandboxed iframe.
+// HTML. We use a DELIMITER format (not JSON) so large HTML can't break parsing
+// and a truncated response still yields the screens that completed. Output is
+// sanitized and rendered in a sandboxed iframe.
 
-function parseClaudeJSON<T>(text: string): T {
-  const cleaned = text
-    .replace(/^```(?:json)?\s*/m, "")
-    .replace(/\s*```\s*$/m, "")
-    .trim();
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch {
-    throw new Error("The model returned an incomplete response. Please try again.");
-  }
-}
-
-/** ── Pure: strip scripts / event handlers / js: URLs (defense-in-depth). ── */
+/** ── Pure: strip scripts / handlers / js: URLs and any document wrapper. ── */
 export function sanitizeScreenHtml(html: string): string {
   return html
+    .replace(/<!doctype[^>]*>/gi, "")
+    .replace(/<\/?(?:html|head|body)\b[^>]*>/gi, "")
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<script\b[^>]*\/?>/gi, "")
     .replace(/\son\w+\s*=\s*"[^"]*"/gi, "")
     .replace(/\son\w+\s*=\s*'[^']*'/gi, "")
     .replace(/\son\w+\s*=\s*[^\s>]+/gi, "")
-    .replace(/javascript:/gi, "");
+    .replace(/javascript:/gi, "")
+    .trim();
+}
+
+/** ── Pure: parse the delimiter format into screens. ── */
+export function parseScreens(text: string): DesignScreen[] {
+  const re = /<<<SCREEN:\s*(.+?)\s*>>>([\s\S]*?)(?=<<<SCREEN:|<<<END>>>|$)/g;
+  const screens: DesignScreen[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const name = m[1].trim();
+    const html = sanitizeScreenHtml(m[2]);
+    // Keep only screens that actually produced markup (drop a truncated tail).
+    if (html.includes("<") && html.length > 40) screens.push({ name, html });
+  }
+  return screens.slice(0, 3);
 }
 
 export async function renderScreens(input: PolishInput, system: DesignSystem): Promise<DesignScreen[]> {
   const client = getAnthropicClient();
   const res = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 16000,
+    max_tokens: 8000,
     messages: [
       {
         role: "user",
-        content: `You are a world-class design engineer. Produce 3 STUNNING, real screens for this product as self-contained HTML, in the "${system.direction}" design system. These must look like a top studio designed them — not AI-generated.
+        content: `You are a world-class design engineer. Produce 3 STUNNING, real screens for this product as self-contained HTML fragments, in the "${system.direction}" design system. They must look like a top studio designed them — not AI-generated.
 
 PRODUCT: ${input.name || "(unnamed)"} — ${input.productType}
 AUDIENCE: ${input.audience || "(general)"}
 DIRECTION: ${system.direction} — ${system.personality}
-STYLE DIRECTIVE: ${system.spacingNote}; ${system.motionNote}
+STYLE: ${system.spacingNote}; ${system.motionNote}
 FONTS: display "${system.typography.displayFont}", body "${system.typography.bodyFont}", mono "${system.typography.monoFont}".
 
 ${DESIGN_PRINCIPLES}
 
-HARD REQUIREMENTS for the HTML:
-- Each screen is a complete <section> (or wrapper div) with its OWN <style> block scoped via a unique root class. Real, considered layout — not a centered template.
-- Use ONLY the design-system CSS variables for color, never hardcoded hex: var(--background), var(--foreground), var(--card), var(--card-foreground), var(--primary), var(--primary-foreground), var(--secondary), var(--muted), var(--muted-foreground), var(--accent), var(--border), var(--ring), var(--destructive), var(--success). Use var(--radius), var(--font-display), var(--font-body), var(--font-mono). (These variables are injected by the host — do not redefine them.)
-- Real, human copy specific to THIS product. No lorem, no marketing mush.
-- Inline SVG for icons (never emoji). Responsive (use clamp / flex / grid). Include hover/focus states.
-- NO <script>, no external JS, no external images (use CSS gradients/shapes or inline SVG). Fonts are provided by the host.
-- Pick the 3 screens that best show the product (e.g. landing/hero, the main app/dashboard screen, and one of: pricing, auth, settings, detail).
+RULES FOR EACH SCREEN:
+- A self-contained HTML FRAGMENT: its own <style> (scoped via a unique root class) followed by a <section>/<div>. NO <html>, <head>, <body>, or <!doctype>.
+- Use ONLY these CSS variables for color (injected by the host — never redefine, never hardcode hex): var(--background) var(--foreground) var(--card) var(--card-foreground) var(--primary) var(--primary-foreground) var(--secondary) var(--muted) var(--muted-foreground) var(--accent) var(--border) var(--ring) var(--destructive) var(--success). Also var(--radius) var(--font-display) var(--font-body) var(--font-mono).
+- Real, human copy for THIS product. Inline SVG icons (never emoji). Responsive (clamp/flex/grid). Hover/focus states.
+- NO <script>, no external JS, no external images. Keep each screen FOCUSED — one strong viewport (~90–160 lines).
+- Pick the 3 best screens (e.g. landing/hero, the main app/dashboard, and one of pricing/auth/settings).
 
-CRITICAL: Keep each screen FOCUSED — one strong viewport (roughly 90–180 lines of HTML), not a giant multi-section page. All three screens MUST fit in your response as COMPLETE, valid JSON. Do not get cut off mid-screen; if you are running long, write fewer, complete screens rather than a truncated one.
-
-Return ONLY valid JSON, no markdown:
-{ "screens": [ { "name": "<screen name>", "html": "<self-contained HTML with its own <style>>" }, ... ] }`,
+OUTPUT EXACTLY THIS FORMAT — no JSON, no prose, no code fences:
+<<<SCREEN: Landing>>>
+<style>...</style>
+<section class="...">...</section>
+<<<SCREEN: Dashboard>>>
+<style>...</style>
+<section class="...">...</section>
+<<<SCREEN: Pricing>>>
+<style>...</style>
+<section class="...">...</section>
+<<<END>>>`,
       },
     ],
   });
 
   const block = res.content[0];
   if (!block || block.type !== "text") throw new Error("No screens generated");
-  const parsed = parseClaudeJSON<{ screens: DesignScreen[] }>(block.text);
-  if (!Array.isArray(parsed.screens) || parsed.screens.length === 0) {
-    throw new Error("No screens generated");
-  }
-  return parsed.screens.slice(0, 4).map((s) => ({ name: s.name, html: sanitizeScreenHtml(s.html) }));
+  const screens = parseScreens(block.text);
+  if (screens.length === 0) throw new Error("No screens generated");
+  return screens;
 }

@@ -15,6 +15,16 @@ function parseClaudeJSON<T>(text: string): T {
   try {
     return JSON.parse(cleaned) as T;
   } catch {
+    // Fallback: extract the outermost JSON object/array if wrapped in prose.
+    const start = cleaned.search(/[{[]/);
+    const end = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
+    if (start !== -1 && end > start) {
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1)) as T;
+      } catch {
+        /* fall through */
+      }
+    }
     throw new Error("The model returned an incomplete response. Please try again.");
   }
 }

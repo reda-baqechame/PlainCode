@@ -35,6 +35,27 @@ const EMPTY_INPUT: PolishInput = {
   screenshot: undefined,
 };
 
+/** POST JSON with a hard timeout so a slow/hung request can't spin forever. */
+async function postJson(url: string, body: unknown, timeoutMs: number): Promise<Response> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") {
+      throw new Error("This is taking longer than expected — please try again.");
+    }
+    throw e;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 export default function PolishPage() {
   const [phase, setPhase] = useState<Phase>("input");
   const [input, setInput] = useState<PolishInput>(EMPTY_INPUT);
@@ -68,11 +89,7 @@ export default function PolishPage() {
     setError("");
     setPhase("analyzing");
     try {
-      const res = await fetch("/api/polish/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
+      const res = await postJson("/api/polish/analyze", input, 120000);
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Failed to analyze");
@@ -81,8 +98,8 @@ export default function PolishPage() {
       }
       setAnalysis(data as DesignAnalysis);
       setPhase("directions");
-    } catch {
-      setError("Connection error. Please try again.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Connection error. Please try again.");
       setPhase("input");
     }
   }
@@ -91,11 +108,11 @@ export default function PolishPage() {
     setError("");
     setPhase("compiling");
     try {
-      const cRes = await fetch("/api/polish/compile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: { ...input, screenshot: undefined }, direction }),
-      });
+      const cRes = await postJson(
+        "/api/polish/compile",
+        { input: { ...input, screenshot: undefined }, direction },
+        120000
+      );
       const system = await cRes.json();
       if (!cRes.ok) {
         setError(system.error ?? "Failed to compile design system");
@@ -103,22 +120,22 @@ export default function PolishPage() {
         return;
       }
       setPhase("designing");
-      const screens = await renderScreens(system as DesignSystem, input);
+      const screens = await requestScreens(system as DesignSystem, input);
       finishResult(system as DesignSystem, screens);
-    } catch {
-      setError("Connection error. Please try again.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Connection error. Please try again.");
       setPhase("directions");
     }
   }
 
-  async function renderScreens(system: DesignSystem, forInput: PolishInput): Promise<DesignScreen[]> {
-    const rRes = await fetch("/api/polish/render", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input: { ...forInput, screenshot: undefined }, system }),
-    });
+  async function requestScreens(system: DesignSystem, forInput: PolishInput): Promise<DesignScreen[]> {
+    const rRes = await postJson(
+      "/api/polish/render",
+      { input: { ...forInput, screenshot: undefined }, system },
+      150000
+    );
     const data = await rRes.json();
-    if (!rRes.ok) throw new Error(data.error ?? "render failed");
+    if (!rRes.ok) throw new Error(data.error ?? "Failed to render designs");
     return data.screens as DesignScreen[];
   }
 
@@ -146,7 +163,7 @@ export default function PolishPage() {
         screenshot: undefined,
         vibe: `${input.vibe} — Refinement: ${refine.trim()}`,
       };
-      const screens = await renderScreens(result, refinedInput);
+      const screens = await requestScreens(result, refinedInput);
       const updated: PolishResult = { ...result, screens };
       setResult(updated);
       setRefine("");
@@ -224,7 +241,7 @@ export default function PolishPage() {
             <p className="text-xs text-muted-foreground mt-1">
               {phase === "analyzing" && "Reading the vibe and proposing 3 real directions…"}
               {phase === "compiling" && "Choosing fonts, colors, and tokens — and killing the slop…"}
-              {phase === "designing" && "Generating beautiful, real screens in code…"}
+              {phase === "designing" && "Generating beautiful, real screens in code — this can take up to a minute…"}
             </p>
           </div>
         </div>
