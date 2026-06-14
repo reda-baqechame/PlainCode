@@ -241,7 +241,7 @@ export default function PolishPage() {
             <p className="text-xs text-muted-foreground mt-1">
               {phase === "analyzing" && "Reading the vibe and proposing 3 real directions…"}
               {phase === "compiling" && "Choosing fonts, colors, and tokens — and killing the slop…"}
-              {phase === "designing" && "Generating beautiful, real screens in code…"}
+              {phase === "designing" && "Generating beautiful, real screens in code — this can take up to a minute…"}
             </p>
           </div>
         </div>
