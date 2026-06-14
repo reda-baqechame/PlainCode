@@ -1,6 +1,7 @@
 import type { CheckResult } from "@/app/api/vibe-check/route";
 import type { DocumentResult } from "@/types/explanation";
 import type { BlueprintResult } from "@/types/blueprint";
+import type { PolishResult } from "@/types/polish";
 
 export interface ShipShareData {
   repoUrl: string;
@@ -104,4 +105,30 @@ export function decodeBlueprintShare(encoded: string): BlueprintShareData | null
 // the URL hash fragment — same reasoning as document share links above.
 export function buildBlueprintShareUrl(origin: string, encoded: string): string {
   return `${origin}/blueprint#bp=${encoded}`;
+}
+
+export interface PolishShareData {
+  result: PolishResult;
+}
+
+export function encodePolishShare(data: PolishShareData): string {
+  try {
+    return btoa(encodeURIComponent(JSON.stringify(data)));
+  } catch {
+    return "";
+  }
+}
+
+export function decodePolishShare(encoded: string): PolishShareData | null {
+  try {
+    return JSON.parse(decodeURIComponent(atob(encoded))) as PolishShareData;
+  } catch {
+    return null;
+  }
+}
+
+// Polish payloads are large (design system + rendered screens), so they ride in
+// the URL hash fragment — same reasoning as the other large share links.
+export function buildPolishShareUrl(origin: string, encoded: string): string {
+  return `${origin}/polish#ps=${encoded}`;
 }

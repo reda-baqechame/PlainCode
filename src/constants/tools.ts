@@ -6,6 +6,7 @@ import {
   Shield,
   Zap,
   Bot,
+  Palette,
   type LucideIcon,
 } from "lucide-react";
 
@@ -13,7 +14,7 @@ import {
 // arc. Consumed by the landing page, navbar, and page headers so names,
 // taglines, icons, and accents never drift between surfaces.
 
-export type StageId = "plan" | "build" | "understand" | "harden" | "ship";
+export type StageId = "plan" | "design" | "build" | "understand" | "harden" | "ship";
 
 export interface Stage {
   id: StageId;
@@ -24,6 +25,7 @@ export interface Stage {
 /** The product arc, in order. "Build" is the outbound handoff, not a tool. */
 export const STAGES: Stage[] = [
   { id: "plan", label: "Plan", blurb: "Turn a vague idea into a build-ready spec." },
+  { id: "design", label: "Design", blurb: "Generate a real design system, not AI slop." },
   { id: "build", label: "Build", blurb: "Hand the spec to your AI agent and build it." },
   { id: "understand", label: "Understand", blurb: "Make sense of any code, fast." },
   { id: "harden", label: "Harden", blurb: "Pressure-test your decisions." },
@@ -97,6 +99,13 @@ const ACCENTS: Record<string, Accent> = {
     solid: "bg-amber-500 text-white",
     solidHover: "hover:bg-amber-600",
   },
+  fuchsia: {
+    text: "text-fuchsia-500",
+    soft: "bg-fuchsia-500/10 text-fuchsia-500",
+    border: "border-fuchsia-500",
+    solid: "bg-fuchsia-500 text-white",
+    solidHover: "hover:bg-fuchsia-600",
+  },
 };
 
 export const TOOLS: Tool[] = [
@@ -115,6 +124,23 @@ export const TOOLS: Tool[] = [
       "Dump your idea, who it's for, and the problem it solves",
       "Answer 5 clarifying questions the AI asks back",
       "Copy the spec and a tailored prompt straight into your AI tool",
+    ],
+  },
+  {
+    id: "polish",
+    name: "Polish",
+    stage: "design",
+    href: "/polish",
+    Icon: Palette,
+    accent: ACCENTS.fuchsia,
+    badge: "Beats Figma",
+    tagline: "App → real design, no slop",
+    blurb:
+      "Describe your app or drop a screenshot of your current ugly UI. Polish critiques the AI-slop tells, gives you 3 real design directions, then generates an actual rendered design — beautiful screens in real code — plus the design system (DESIGN.md + tokens) and prompts to keep your AI on-brand.",
+    steps: [
+      "Describe the app and drop a screenshot of the current UI",
+      "Pick one of 3 distinct design directions the AI proposes",
+      "Get rendered screens, the design system, and apply-it prompts",
     ],
   },
   {
