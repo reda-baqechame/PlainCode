@@ -255,6 +255,7 @@ export default function PolishPage() {
               onChange={(e) => setRefine(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleRefine()}
               placeholder="Refine: e.g. make it warmer, denser, more editorial…"
+              aria-label="Refine the design by intent"
               disabled={refining}
               className="flex-1 text-sm bg-background border border-border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
             />

@@ -10,7 +10,40 @@ interface Props {
   disabled?: boolean;
 }
 
-const MAX_BYTES = 7 * 1024 * 1024;
+const MAX_BYTES = 12 * 1024 * 1024;
+const MAX_DIM = 1600;
+
+/** Downscale a large screenshot to keep the payload (and vision cost) small. */
+function downscaleImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+      if (scale === 1 && file.size < 1_500_000) {
+        // Small enough already — read as-is to keep crispness.
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("read failed"));
+        reader.readAsDataURL(file);
+        return;
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("no canvas"));
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.92));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("bad image"));
+    };
+    img.src = url;
+  });
+}
 
 export function PolishForm({ value, onChange, onSubmit, disabled }: Props) {
   const set = (patch: Partial<PolishInput>) => onChange({ ...value, ...patch });
@@ -26,12 +59,12 @@ export function PolishForm({ value, onChange, onSubmit, disabled }: Props) {
       return;
     }
     if (file.size > MAX_BYTES) {
-      setImgError("Image is too large (max 7MB).");
+      setImgError("Image is too large (max 12MB).");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => set({ screenshot: String(reader.result) });
-    reader.readAsDataURL(file);
+    downscaleImage(file)
+      .then((dataUrl) => set({ screenshot: dataUrl }))
+      .catch(() => setImgError("Couldn't read that image — try another."));
   }
 
   return (

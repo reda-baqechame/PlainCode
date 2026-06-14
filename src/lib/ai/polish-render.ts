@@ -33,7 +33,7 @@ export async function renderScreens(input: PolishInput, system: DesignSystem): P
   const client = getAnthropicClient();
   const res = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 8000,
+    max_tokens: 16000,
     messages: [
       {
         role: "user",
@@ -42,7 +42,7 @@ export async function renderScreens(input: PolishInput, system: DesignSystem): P
 PRODUCT: ${input.name || "(unnamed)"} — ${input.productType}
 AUDIENCE: ${input.audience || "(general)"}
 DIRECTION: ${system.direction} — ${system.personality}
-STYLE DIRECTIVE: ${system.tokens.css ? "" : ""}${system.spacingNote}; ${system.motionNote}
+STYLE DIRECTIVE: ${system.spacingNote}; ${system.motionNote}
 FONTS: display "${system.typography.displayFont}", body "${system.typography.bodyFont}", mono "${system.typography.monoFont}".
 
 ${DESIGN_PRINCIPLES}
@@ -54,6 +54,8 @@ HARD REQUIREMENTS for the HTML:
 - Inline SVG for icons (never emoji). Responsive (use clamp / flex / grid). Include hover/focus states.
 - NO <script>, no external JS, no external images (use CSS gradients/shapes or inline SVG). Fonts are provided by the host.
 - Pick the 3 screens that best show the product (e.g. landing/hero, the main app/dashboard screen, and one of: pricing, auth, settings, detail).
+
+CRITICAL: Keep each screen FOCUSED — one strong viewport (roughly 90–180 lines of HTML), not a giant multi-section page. All three screens MUST fit in your response as COMPLETE, valid JSON. Do not get cut off mid-screen; if you are running long, write fewer, complete screens rather than a truncated one.
 
 Return ONLY valid JSON, no markdown:
 { "screens": [ { "name": "<screen name>", "html": "<self-contained HTML with its own <style>>" }, ... ] }`,
