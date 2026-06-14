@@ -8,11 +8,12 @@ Free. No sign-up required.
 
 ## What It Does
 
-PlainCode walks the whole arc — **Plan → Build → Understand → Harden → Ship** — with one tool per stage:
+PlainCode walks the whole arc — **Plan → Design → Build → Understand → Harden → Ship** — with one tool per stage:
 
 | Stage | Mode | What it does |
 |-------|------|-------------|
 | Plan | **Blueprint** | Describe a vague idea — get a build-ready spec plus a ready-to-paste prompt for Codex, Claude, ChatGPT, Cursor, or any AI agent |
+| Design | **Polish** | Describe your app or drop a screenshot — get a real *rendered* design (beautiful screens in code), the design system (DESIGN.md + tokens), and prompts that keep your AI on-brand |
 | Understand | **Explain** | Paste code, pick your audience, get a structured plain-English explanation |
 | Understand | **Document** | Paste a snippet or point at a repo — get README-ready docs with three diagrams, an API reference, and one-click export |
 | Understand | **Diff** | Compare two versions of code and understand what changed and why |
@@ -40,6 +41,22 @@ The pre-code stage: turn a half-formed idea into a precise, build-ready spec for
 - **Recent blueprints** — last 5 kept locally so you can reopen them instantly
 
 Built on the same Claude pipeline as every other mode. No new API keys, no database, no sign-up — fully stateless on the server; history and shares live in your browser.
+
+---
+
+### Polish Mode *(new)*
+
+The fix for "AI slop" UI. AI builds functional but generic, obviously-AI interfaces — because, given a vague brief, a model emits the *average* of its training data. Polish turns your app into a real, designed UI and the machine-readable design system that keeps your AI on-brand.
+
+**How it works:**
+1. Describe your app (and audience / vibe), and optionally **upload a screenshot** of the current UI — Claude reads it *multimodally* and critiques the specific "this looks AI" tells it can see.
+2. It proposes **3 genuinely distinct design directions** (real reference aesthetics, never the default shadcn/violet look).
+3. Pick one. Polish generates the **design system** — a distinctive font pairing, a real color system (light + dark, AA-contrast, no pure-gray neutrals), radius/spacing/motion, validated by an anti-slop pass that rejects generic choices.
+4. Then it **renders 3 real screens as actual HTML/CSS**, shown in a **live, sandboxed preview** with light/dark + desktop/mobile toggles — not a static mock, real code you can copy and ship.
+
+**Why it beats a design tool for this job:** Figma gives you a *picture* you then rebuild in code — the handoff is where quality dies. Polish outputs real, system-consistent code rendered live: instant, responsive, free, and you **refine by intent** ("make it warmer / denser / more editorial") and the whole design regenerates consistently.
+
+**You get:** the live screens (copy/download HTML), a `DESIGN.md`, paste-ready **design tokens** (Tailwind `@theme` / CSS variables / JSON), and **universal AI prompts** (Codex / Claude / ChatGPT / Cursor) that tell any agent to apply the system and avoid the slop patterns. Generated screens render in a `sandbox` iframe with scripts stripped. Stateless; history and shares live in your browser.
 
 ---
 
@@ -273,6 +290,9 @@ The app uses Next.js standalone output mode for containerized deployments (Railw
 |--------|------|-------------|
 | `POST` | `/api/blueprint/analyze` | Analyze a vague idea and generate 5 clarifying questions |
 | `POST` | `/api/blueprint/compile` | Compile the idea + answers into a spec and universal prompts |
+| `POST` | `/api/polish/analyze` | Critique a UI (text + optional screenshot) and propose 3 design directions |
+| `POST` | `/api/polish/compile` | Compile the chosen direction into a design system + tokens + prompts |
+| `POST` | `/api/polish/render` | Render real screens as HTML for the design system |
 | `POST` | `/api/explain` | Explain a code snippet (SSE stream) |
 | `POST` | `/api/explain-diff` | Explain changes between two code versions (SSE stream) |
 | `POST` | `/api/document` | Generate full documentation — 12 sections incl. 3 diagrams (SSE stream) |

@@ -1,10 +1,12 @@
 import type { DocumentResult } from "@/types/explanation";
 import type { BlueprintResult } from "@/types/blueprint";
+import type { PolishResult } from "@/types/polish";
 
 const SHIP_KEY = "plaincode_ship_history";
 const DEFEND_KEY = "plaincode_defend_history";
 const DOCUMENT_KEY = "plaincode_document_history";
 const BLUEPRINT_KEY = "plaincode_blueprint_history";
+const POLISH_KEY = "plaincode_polish_history";
 const MAX = 5;
 
 export interface ShipHistoryEntry {
@@ -113,4 +115,26 @@ export function getBlueprintHistory(): BlueprintHistoryEntry[] {
 export function deleteBlueprintHistory(id: string): void {
   const list = readList<BlueprintHistoryEntry>(BLUEPRINT_KEY).filter((e) => e.id !== id);
   writeList(BLUEPRINT_KEY, list);
+}
+
+export interface PolishHistoryEntry {
+  id: string;
+  name: string;
+  direction: string;
+  date: string;
+  result: PolishResult;
+}
+
+export function savePolishHistory(entry: PolishHistoryEntry): void {
+  const list = readList<PolishHistoryEntry>(POLISH_KEY).filter((e) => e.id !== entry.id);
+  writeList(POLISH_KEY, [entry, ...list]);
+}
+
+export function getPolishHistory(): PolishHistoryEntry[] {
+  return readList<PolishHistoryEntry>(POLISH_KEY);
+}
+
+export function deletePolishHistory(id: string): void {
+  const list = readList<PolishHistoryEntry>(POLISH_KEY).filter((e) => e.id !== id);
+  writeList(POLISH_KEY, list);
 }
