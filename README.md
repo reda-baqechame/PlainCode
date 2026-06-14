@@ -46,17 +46,17 @@ Built on the same Claude pipeline as every other mode. No new API keys, no datab
 
 ### Polish Mode *(new)*
 
-The fix for "AI slop" UI. AI builds functional but generic, obviously-AI interfaces — because, given a vague brief, a model emits the *average* of its training data. Polish turns your app into a real, designed UI and the machine-readable design system that keeps your AI on-brand.
+Production-grade UI, not AI slop. AI builds functional but generic, obviously-AI interfaces — because, given a vague brief, a model emits the *average* of its training data. Polish fixes that with the same mechanism the rest of PlainCode runs on: a **generate → critique → revise loop** — except here the critique is *visual*.
 
 **How it works:**
-1. Describe your app (and audience / vibe), and optionally **upload a screenshot** of the current UI — Claude reads it *multimodally* and critiques the specific "this looks AI" tells it can see.
-2. It proposes **3 genuinely distinct design directions** (real reference aesthetics, never the default shadcn/violet look).
-3. Pick one. Polish generates the **design system** — a distinctive font pairing, a real color system (light + dark, AA-contrast, no pure-gray neutrals), radius/spacing/motion, validated by an anti-slop pass that rejects generic choices.
-4. Then it **renders 3 real screens as actual HTML/CSS**, shown in a **live, sandboxed preview** with light/dark + desktop/mobile toggles — not a static mock, real code you can copy and ship.
+1. Describe your app (and audience / vibe), optionally **upload a screenshot** of the current UI — Claude reads it *multimodally* and names the specific "this looks AI" tells it sees.
+2. It proposes **3 genuinely distinct design directions** (real reference aesthetics, never the default shadcn/violet look). Pick one.
+3. It builds a real **design system** (distinctive font pairing; a tinted, AA-contrast color system for light + dark; radius/spacing/motion) and **designs one flagship screen** to a strict rubric.
+4. **The self-critique loop:** it renders that screen, screenshots the *actual pixels*, and Claude's **vision** scores it against the rubric and lists concrete fixes — then revises, up to two passes. You watch it happen live ("Pass 1: 61 → Pass 2: 89"), and the result page shows the trail as proof of craft.
 
-**Why it beats a design tool for this job:** Figma gives you a *picture* you then rebuild in code — the handoff is where quality dies. Polish outputs real, system-consistent code rendered live: instant, responsive, free, and you **refine by intent** ("make it warmer / denser / more editorial") and the whole design regenerates consistently.
+**Honest scope:** this isn't a Figma replacement. It's a senior design pass that turns an idea or a slop screen into one impeccably-crafted, real, shippable screen — plus the system to build the rest. (The visual critique uses `html2canvas`, an approximation of the real render — enough to judge hierarchy, spacing, contrast, and alignment; it degrades gracefully if capture fails.)
 
-**You get:** the live screens (copy/download HTML), a `DESIGN.md`, paste-ready **design tokens** (Tailwind `@theme` / CSS variables / JSON), and **universal AI prompts** (Codex / Claude / ChatGPT / Cursor) that tell any agent to apply the system and avoid the slop patterns. Generated screens render in a `sandbox` iframe with scripts stripped. Stateless; history and shares live in your browser.
+**You get:** the live screen (copy/download HTML) + a **"generate another screen"** that reuses the locked style, a `DESIGN.md`, paste-ready **design tokens** (Tailwind `@theme` / CSS variables / JSON), and **universal AI prompts** (Codex / Claude / ChatGPT / Cursor) to apply the system on-brand. Screens render in a sandboxed iframe (`allow-same-origin`, no scripts) with scripts/handlers stripped. Stateless; history and shares live in your browser.
 
 ---
 
@@ -292,7 +292,9 @@ The app uses Next.js standalone output mode for containerized deployments (Railw
 | `POST` | `/api/blueprint/compile` | Compile the idea + answers into a spec and universal prompts |
 | `POST` | `/api/polish/analyze` | Critique a UI (text + optional screenshot) and propose 3 design directions |
 | `POST` | `/api/polish/compile` | Compile the chosen direction into a design system + tokens + prompts |
-| `POST` | `/api/polish/render` | Render real screens as HTML for the design system |
+| `POST` | `/api/polish/draft` | Design one flagship screen as HTML from the design system |
+| `POST` | `/api/polish/critique` | Vision-critique a rendered screenshot against the design rubric |
+| `POST` | `/api/polish/revise` | Revise a screen by applying the critique's fixes |
 | `POST` | `/api/explain` | Explain a code snippet (SSE stream) |
 | `POST` | `/api/explain-diff` | Explain changes between two code versions (SSE stream) |
 | `POST` | `/api/document` | Generate full documentation — 12 sections incl. 3 diagrams (SSE stream) |

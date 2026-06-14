@@ -86,6 +86,23 @@ export interface DesignScreen {
   html: string;
 }
 
+/** One issue found by the visual critique. */
+export interface DesignIssue {
+  area: string;
+  problem: string;
+  fix: string;
+}
+
+/** A vision critique of a rendered screen, scored against the design rubric. */
+export interface DesignCritique {
+  /** 0–100 craft score. */
+  score: number;
+  /** True if it still reads as a generic "AI-generated" template. */
+  looksAI: boolean;
+  issues: DesignIssue[];
+  verdict: string;
+}
+
 /** The compiled design system (POST /api/polish/compile), before screens. */
 export interface DesignSystem {
   direction: string;
@@ -108,7 +125,10 @@ export interface DesignSystem {
 /** The full Polish result stored in history / share / export. */
 export interface PolishResult extends DesignSystem {
   name: string;
+  /** Flagship screen first; more can be appended on demand. */
   screens: DesignScreen[];
+  /** The visual critique passes that refined the flagship screen (proof of craft). */
+  critiqueTrail: DesignCritique[];
 }
 
 /** The ordered token role keys — shared by serializers and the live preview. */

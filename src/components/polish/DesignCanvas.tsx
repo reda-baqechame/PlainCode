@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { Check, Copy, Monitor, Smartphone, Sun, Moon, Download } from "lucide-react";
 import type { DesignScreen, DesignTypography } from "@/types/polish";
+import { googleFontsHref, buildScreenDoc } from "@/lib/utils/capture";
 import { cn } from "@/lib/utils/cn";
 
 interface Props {
@@ -9,40 +10,6 @@ interface Props {
   /** The design-system CSS (`:root` + `.dark` variable blocks). */
   css: string;
   typography: DesignTypography;
-}
-
-function googleFontsHref(typography: DesignTypography): string {
-  const families = (typography.googleFonts?.length
-    ? typography.googleFonts
-    : [typography.displayFont, typography.bodyFont, typography.monoFont]
-  ).filter(Boolean);
-  const unique = Array.from(new Set(families));
-  const params = unique
-    .map((f) => `family=${encodeURIComponent(f).replace(/%20/g, "+")}:wght@400;500;600;700`)
-    .join("&");
-  return `https://fonts.googleapis.com/css2?${params}&display=swap`;
-}
-
-function buildDoc(screenHtml: string, css: string, fontsHref: string, dark: boolean): string {
-  return `<!doctype html>
-<html lang="en" class="${dark ? "dark" : ""}">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="${fontsHref}" />
-<style>
-${css}
-*, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body { background: var(--background); color: var(--foreground); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
-</style>
-</head>
-<body>
-${screenHtml}
-</body>
-</html>`;
 }
 
 export function DesignCanvas({ screens, css, typography }: Props) {
@@ -54,7 +21,7 @@ export function DesignCanvas({ screens, css, typography }: Props) {
   const fontsHref = useMemo(() => googleFontsHref(typography), [typography]);
   const screen = screens[active];
   const doc = useMemo(
-    () => (screen ? buildDoc(screen.html, css, fontsHref, dark) : ""),
+    () => (screen ? buildScreenDoc(screen.html, css, fontsHref, dark) : ""),
     [screen, css, fontsHref, dark]
   );
 
@@ -139,7 +106,7 @@ export function DesignCanvas({ screens, css, typography }: Props) {
         <iframe
           title={`${screen.name} preview`}
           srcDoc={doc}
-          sandbox=""
+          sandbox="allow-same-origin"
           className={cn(
             "bg-white rounded-lg border border-border shadow-elevated transition-all",
             mobile ? "w-[390px]" : "w-full"
